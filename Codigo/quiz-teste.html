@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>NextStep — Teste de Quizzes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f0f4f8; color: #222; padding: 24px; }
+    h1 { color: #2563eb; margin-bottom: 24px; }
+    h2 { margin-bottom: 12px; font-size: 1.1rem; color: #374151; }
+    section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px;
+              box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; margin-top: 10px; }
+    input, select, textarea {
+      width: 100%; padding: 8px; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: .9rem; margin-bottom: 4px;
+    }
+    button {
+      margin-top: 10px; padding: 9px 18px; border: none; border-radius: 6px;
+      background: #2563eb; color: #fff; font-size: .9rem; cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    pre { background: #1e293b; color: #a5f3fc; padding: 14px; border-radius: 6px;
+          font-size: .8rem; overflow-x: auto; white-space: pre-wrap; margin-top: 12px; }
+    .questao-bloco { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-top: 10px; }
+    .alt-linha { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+    .alt-linha input[type="text"] { flex: 1; margin-bottom: 0; }
+    .alt-linha label { margin: 0; font-weight: 400; display: flex; align-items: center; gap: 4px; min-width: 80px; }
+    small { color: #6b7280; font-size: .78rem; }
+  </style>
+</head>
+<body>
+
+<h1>🧪 NextStep — Teste da API de Quizzes</h1>
+
+<!-- ======================================================
+     SEÇÃO 0: PROFESSORES
+     IMPORTANTE: Antes de criar um quiz, é necessário ter
+     um professor cadastrado no banco. Use esta seção primeiro.
+====================================================== -->
+<section style="border: 2px solid #f59e0b;">
+  <h2>👨‍🏫 Passo 1 — Cadastrar / Listar Professores</h2>
+  <small>⚠️ Você precisa ter um professor no banco antes de criar um quiz!</small>
+
+  <label>Nome do Professor</label>
+  <input id="prof-nome" type="text" placeholder="Ex: João Silva" />
+
+  <label>Email do Professor</label>
+  <input id="prof-email" type="text" placeholder="Ex: joao@nextstep.com" />
+
+  <button onclick="criarProfessor()" style="background:#d97706;">➕ Cadastrar Professor</button>
+  <button onclick="listarProfessores()" style="margin-left:8px;">📋 Listar Professores (ver IDs)</button>
+  <pre id="resultado-professores">— resposta aparece aqui —</pre>
+</section>
+
+<!-- ======================================================
+     SEÇÃO 1: CRIAR QUIZ
+====================================================== -->
+<section>
+  <h2>➕ Criar Quiz</h2>
+  <small>Preencha os dados abaixo. As questões são adicionadas dinamicamente.</small>
+
+  <label>Título do Quiz</label>
+  <input id="titulo" type="text" placeholder="Ex: Verbos Irregulares - Nível 1" />
+
+  <label>Descrição</label>
+  <input id="descricao" type="text" placeholder="Ex: Pratique os verbos mais usados" />
+
+  <label>ID do Professor</label>
+  <input id="professorId" type="number" placeholder="Ex: 1" value="1" />
+
+  <div id="questoes-container"></div>
+
+  <button onclick="adicionarQuestao()">+ Adicionar Questão</button>
+  <button onclick="criarQuiz()" style="margin-left:8px; background:#16a34a;">💾 Salvar Quiz</button>
+
+  <pre id="resultado-criar">— resposta aparece aqui —</pre>
+</section>
+
+<!-- ======================================================
+     SEÇÃO 2: LISTAR TODOS
+====================================================== -->
+<section>
+  <h2>📋 Listar Todos os Quizzes</h2>
+  <button onclick="listarTodos()">🔍 Buscar</button>
+  <pre id="resultado-listar">— resposta aparece aqui —</pre>
+</section>
+
+<!-- ======================================================
+     SEÇÃO 3: BUSCAR POR ID
+====================================================== -->
+<section>
+  <h2>🔎 Buscar Quiz por ID</h2>
+  <label>ID do Quiz</label>
+  <input id="buscarId" type="number" placeholder="Ex: 1" />
+  <button onclick="buscarPorId()">Buscar</button>
+  <pre id="resultado-buscar">— resposta aparece aqui —</pre>
+</section>
+
+<!-- ======================================================
+     SEÇÃO 4: LISTAR POR PROFESSOR
+====================================================== -->
+<section>
+  <h2>👨‍🏫 Quizzes de um Professor</h2>
+  <label>ID do Professor</label>
+  <input id="profId" type="number" placeholder="Ex: 1" />
+  <button onclick="listarPorProfessor()">Buscar</button>
+  <pre id="resultado-professor">— resposta aparece aqui —</pre>
+</section>
+
+<!-- ======================================================
+     SEÇÃO 5: DELETAR
+====================================================== -->
+<section>
+  <h2>🗑️ Deletar Quiz</h2>
+  <label>ID do Quiz</label>
+  <input id="deletarId" type="number" placeholder="Ex: 1" />
+  <button class="danger" onclick="deletarQuiz()">Deletar</button>
+  <pre id="resultado-deletar">— resposta aparece aqui —</pre>
+</section>
+
+<script>
+  // URL base da API — aponta para o Spring Boot rodando localmente na porta 8080
+  const BASE_URL = 'http://localhost:8080';
+
+  // Contador para dar IDs únicos aos blocos de questões criados dinamicamente
+  let questaoIndex = 0;
+
+  // ============================================================
+  // Adiciona dinamicamente um bloco de questão na tela
+  // ============================================================
+  function adicionarQuestao() {
+    const idx = questaoIndex++;
+    const container = document.getElementById('questoes-container');
+
+    const bloco = document.createElement('div');
+    bloco.className = 'questao-bloco';
+    bloco.id = `questao-${idx}`;
+    bloco.innerHTML = `
+      <strong>Questão ${idx + 1}</strong>
+      <label>Enunciado</label>
+      <input type="text" id="enunciado-${idx}" placeholder='Ex: What is the past tense of "go"?' />
+      <label>Dificuldade</label>
+      <select id="dificuldade-${idx}">
+        <option value="FACIL">FÁCIL (1 ponto)</option>
+        <option value="MEDIA" selected>MÉDIA (2 pontos)</option>
+        <option value="DIFICIL">DIFÍCIL (3 pontos)</option>
+      </select>
+      <label>Alternativas</label>
+      <div id="alts-${idx}">
+        ${criarLinhaAlternativa(idx, 0)}
+        ${criarLinhaAlternativa(idx, 1)}
+        ${criarLinhaAlternativa(idx, 2)}
+        ${criarLinhaAlternativa(idx, 3)}
+      </div>
+      <small>Marque o checkbox da alternativa correta.</small>
+    `;
+    container.appendChild(bloco);
+  }
+
+  // Gera o HTML de uma linha de alternativa (texto + checkbox "correta")
+  function criarLinhaAlternativa(qIdx, aIdx) {
+    return `
+      <div class="alt-linha">
+        <input type="text" id="alt-texto-${qIdx}-${aIdx}" placeholder="Alternativa ${aIdx + 1}" />
+        <label>
+          <input type="checkbox" id="alt-correta-${qIdx}-${aIdx}" />
+          Correta
+        </label>
+      </div>`;
+  }
+
+  // ============================================================
+  // Coleta os dados do formulário e monta o objeto JSON do quiz
+  // ============================================================
+  function montarPayload() {
+    const questoes = [];
+
+    for (let i = 0; i < questaoIndex; i++) {
+      // Verifica se o bloco ainda existe na DOM (pode ter sido gerado fora de ordem)
+      if (!document.getElementById(`questao-${i}`)) continue;
+
+      const enunciado = document.getElementById(`enunciado-${i}`).value;
+      const dificuldade = document.getElementById(`dificuldade-${i}`).value;
+
+      const alternativas = [];
+      for (let j = 0; j < 4; j++) {
+        const textoEl  = document.getElementById(`alt-texto-${i}-${j}`);
+        const certaEl  = document.getElementById(`alt-correta-${i}-${j}`);
+        if (textoEl && textoEl.value.trim() !== '') {
+          alternativas.push({ texto: textoEl.value, correta: certaEl.checked });
+        }
+      }
+
+      questoes.push({ enunciado, dificuldade, alternativas });
+    }
+
+    return {
+      titulo:    document.getElementById('titulo').value,
+      descricao: document.getElementById('descricao').value,
+      professor: { id: parseInt(document.getElementById('professorId').value) },
+      questoes
+    };
+  }
+
+  // ============================================================
+  // POST /professores — Cadastra um professor
+  // ============================================================
+  async function criarProfessor() {
+    const el = document.getElementById('resultado-professores');
+    el.textContent = 'Enviando...';
+    const payload = {
+      nome:  document.getElementById('prof-nome').value,
+      email: document.getElementById('prof-email').value
+    };
+    try {
+      const res  = await fetch(`${BASE_URL}/professores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+      // Preenche automaticamente o campo "ID do Professor" no formulário de quiz
+      if (data.id) {
+        document.getElementById('professorId').value = data.id;
+        el.textContent += '\n\n✅ Campo "ID do Professor" preenchido automaticamente com ' + data.id;
+      }
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // GET /professores — Lista todos os professores (para ver IDs)
+  // ============================================================
+  async function listarProfessores() {
+    const el = document.getElementById('resultado-professores');
+    el.textContent = 'Buscando...';
+    try {
+      const res  = await fetch(`${BASE_URL}/professores`);
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // POST /quizzes — Cria um quiz completo
+  // ============================================================
+  async function criarQuiz() {
+    const payload = montarPayload();
+    const el = document.getElementById('resultado-criar');
+    el.textContent = 'Enviando...';
+    try {
+      const res = await fetch(`${BASE_URL}/quizzes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // GET /quizzes — Lista todos os quizzes
+  // ============================================================
+  async function listarTodos() {
+    const el = document.getElementById('resultado-listar');
+    el.textContent = 'Buscando...';
+    try {
+      const res  = await fetch(`${BASE_URL}/quizzes`);
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // GET /quizzes/{id} — Busca um quiz por ID
+  // ============================================================
+  async function buscarPorId() {
+    const id = document.getElementById('buscarId').value;
+    const el = document.getElementById('resultado-buscar');
+    el.textContent = 'Buscando...';
+    try {
+      const res  = await fetch(`${BASE_URL}/quizzes/${id}`);
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // GET /quizzes/professor/{id} — Lista quizzes por professor
+  // ============================================================
+  async function listarPorProfessor() {
+    const id = document.getElementById('profId').value;
+    const el = document.getElementById('resultado-professor');
+    el.textContent = 'Buscando...';
+    try {
+      const res  = await fetch(`${BASE_URL}/quizzes/professor/${id}`);
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+
+  // ============================================================
+  // DELETE /quizzes/{id} — Deleta um quiz pelo ID
+  // ============================================================
+  async function deletarQuiz() {
+    const id = document.getElementById('deletarId').value;
+    const el = document.getElementById('resultado-deletar');
+    el.textContent = 'Deletando...';
+    try {
+      const res = await fetch(`${BASE_URL}/quizzes/${id}`, { method: 'DELETE' });
+      el.textContent = res.ok
+        ? `✅ Quiz ${id} deletado com sucesso! (status ${res.status})`
+        : `❌ Falhou com status ${res.status}`;
+    } catch (err) {
+      el.textContent = '❌ Erro: ' + err.message;
+    }
+  }
+</script>
+</body>
+</html>

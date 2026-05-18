@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criar Quiz — NextStep</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #f0f2f5;
+      padding: 32px 16px;
+      color: #1a1a1a;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 24px; color: #2563eb; }
+    h2 { font-size: 1.1rem; margin-bottom: 12px; color: #374151; }
+    h3 { font-size: 0.95rem; margin-bottom: 8px; color: #6b7280; }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #374151;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #2563eb;
+    }
+
+    textarea { resize: vertical; min-height: 64px; }
+
+    .questao-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .questao-titulo {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #2563eb;
+      margin-bottom: 12px;
+    }
+
+    .alternativas-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .alternativa-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alternativa-row input[type="text"] {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .alternativa-row input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .alternativa-row label {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-outline {
+      background: #fff;
+      border: 2px solid #2563eb;
+      color: #2563eb;
+    }
+    .btn-outline:hover { background: #eff6ff; }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    #area-questoes { margin-top: 16px; }
+
+    .correta-label { color: #16a34a !important; font-weight: 700 !important; }
+  </style>
+</head>
+<body>
+
+  <h1>Criar Quiz</h1>
+
+  <!-- Dados principais do Quiz -->
+  <div class="card">
+    <h2>Dados do Quiz</h2>
+
+    <label for="titulo">Título</label>
+    <input type="text" id="titulo" placeholder="Ex: Verbos Irregulares — Nível 1" />
+
+    <label for="descricao">Descrição</label>
+    <textarea id="descricao" placeholder="Descrição opcional do quiz"></textarea>
+
+    <label for="professorId">ID do Professor</label>
+    <input type="number" id="professorId" placeholder="Ex: 1" min="1" />
+
+    <label for="nivelIngles">Nível de Inglês</label>
+    <select id="nivelIngles">
+      <option value="A1">A1 — Iniciante</option>
+      <option value="A2">A2 — Básico</option>
+      <option value="B1">B1 — Intermediário</option>
+      <option value="B2">B2 — Intermediário Superior</option>
+      <option value="C1">C1 — Avançado</option>
+      <option value="C2">C2 — Proficiente</option>
+    </select>
+  </div>
+
+  <!-- Questões -->
+  <div class="card">
+    <h2>Questões</h2>
+    <div id="area-questoes"></div>
+    <button class="btn btn-outline" onclick="adicionarQuestao()">+ Adicionar Questão</button>
+  </div>
+
+  <!-- Salvar -->
+  <button class="btn btn-primary" onclick="salvarQuiz()">Salvar Quiz</button>
+
+  <script>
+    let contadorQuestoes = 0;
+
+    // Renderiza um bloco HTML de questão com 4 alternativas
+    function adicionarQuestao() {
+      contadorQuestoes++;
+      const index = contadorQuestoes;
+      const area = document.getElementById('area-questoes');
+
+      const div = document.createElement('div');
+      div.className = 'questao-card';
+      div.dataset.questao = index;
+
+      div.innerHTML = `
+        <div class="questao-titulo">Questão ${index}</div>
+
+        <label>Enunciado</label>
+        <textarea class="enunciado" placeholder="Ex: What is the past tense of 'go'?"></textarea>
+
+        <label>Dificuldade</label>
+        <select class="dificuldade">
+          <option value="FACIL">FÁCIL — 1 ponto</option>
+          <option value="MEDIA">MÉDIA — 2 pontos</option>
+          <option value="DIFICIL">DIFÍCIL — 3 pontos</option>
+        </select>
+
+        <h3>Alternativas <span style="color:#6b7280;font-weight:400">(marque a correta)</span></h3>
+        <div class="alternativas-grid">
+          ${[1, 2, 3, 4].map(n => `
+            <div class="alternativa-row">
+              <input type="radio" name="correta-${index}" value="${n}" />
+              <label class="correta-label">✓</label>
+              <input type="text" class="texto-alt" placeholder="Alternativa ${n}" />
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      area.appendChild(div);
+    }
+
+    // Percorre o DOM e monta o objeto no formato QuizRequestDTO
+    function montarPayload() {
+      const titulo = document.getElementById('titulo').value.trim();
+      const descricao = document.getElementById('descricao').value.trim();
+      const professorId = parseInt(document.getElementById('professorId').value);
+      const nivelIngles = document.getElementById('nivelIngles').value;
+
+      if (!titulo) throw new Error('Informe o título do quiz.');
+      if (isNaN(professorId)) throw new Error('Informe um ID de professor válido.');
+
+      const questoesCards = document.querySelectorAll('[data-questao]');
+      if (questoesCards.length === 0) throw new Error('Adicione ao menos uma questão.');
+
+      const questoes = [];
+
+      questoesCards.forEach((card, qi) => {
+        const enunciado = card.querySelector('.enunciado').value.trim();
+        const dificuldade = card.querySelector('.dificuldade').value;
+        const index = card.dataset.questao;
+
+        if (!enunciado) throw new Error(`Questão ${qi + 1}: informe o enunciado.`);
+
+        const radioSelecionado = card.querySelector(`input[name="correta-${index}"]:checked`);
+        if (!radioSelecionado) throw new Error(`Questão ${qi + 1}: marque a alternativa correta.`);
+        const corretaIndex = parseInt(radioSelecionado.value);
+
+        const textos = card.querySelectorAll('.texto-alt');
+        const alternativas = [];
+
+        textos.forEach((input, ai) => {
+          const texto = input.value.trim();
+          if (!texto) throw new Error(`Questão ${qi + 1}, Alternativa ${ai + 1}: informe o texto.`);
+          alternativas.push({
+            texto: texto,
+            correta: (ai + 1) === corretaIndex
+          });
+        });
+
+        questoes.push({ enunciado, dificuldade, alternativas });
+      });
+
+      return { titulo, descricao, professorId, nivelIngles, questoes };
+    }
+
+    // Faz o POST para /quizzes com o payload montado
+    async function salvarQuiz() {
+      let payload;
+      try {
+        payload = montarPayload();
+      } catch (err) {
+        alert('⚠️ ' + err.message);
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:8080/quizzes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert(`✅ Quiz criado com sucesso! ID: ${data.id}`);
+          console.log('Quiz salvo:', data);
+        } else {
+          const erro = await response.text();
+          alert(`❌ Erro ao salvar o quiz:\n${erro}`);
+        }
+      } catch (err) {
+        alert(`❌ Não foi possível conectar ao servidor.\n${err.message}`);
+      }
+    }
+  </script>
+
+</body>
+</html>

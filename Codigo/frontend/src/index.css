@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens NextStep English ─────────────────────────── */
+@layer base {
+  :root {
+    --background:  40 33% 98%;
+    --foreground:  223 40% 15%;
+
+    /* Vermelho primário — #ae211f */
+    --primary:            1 69% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark:       1 72% 29%;
+
+    /* Azul secundário — #224292 */
+    --secondary:            223 62% 35%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-dark:       223 62% 22%;
+
+    /* Amarelo accent */
+    --accent:            45 93% 53%;
+    --accent-foreground: 223 40% 15%;
+
+    --muted:            210 20% 92%;
+    --muted-foreground: 223 18% 45%;
+
+    --card:            0 0% 100%;
+    --card-foreground: 223 40% 15%;
+
+    --border: 210 20% 86%;
+    --input:  210 20% 86%;
+    --ring:   1 69% 40%;
+
+    --destructive:            0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}

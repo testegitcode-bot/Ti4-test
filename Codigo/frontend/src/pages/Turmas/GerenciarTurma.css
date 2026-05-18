@@ -1,0 +1,396 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap");
+
+.gerenciar-turma-page {
+  min-height: 100vh;
+  background: #fafafa;
+  font-family: "Nunito", sans-serif;
+  color: #20233a;
+}
+
+.topbar {
+  height: 84px;
+  border-bottom: 4px solid #263f8f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 13%;
+  background: white;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: #c5282f;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+}
+
+.logo-area h1 {
+  font-size: 25px;
+  color: #263f8f;
+  margin: 0;
+  font-weight: 900;
+}
+
+.logo-area span {
+  color: #c5282f;
+}
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+.topbar nav a {
+  text-decoration: none;
+  color: #17182b;
+  font-weight: 800;
+}
+
+.topbar nav .active {
+  padding: 13px 28px;
+  border-radius: 14px;
+  background: #263f8f;
+  color: white;
+}
+
+.logout {
+  color: #c5282f !important;
+}
+
+.turma-container {
+  width: 65%;
+  margin: 45px auto;
+}
+
+.btn-voltar {
+  border: 3px solid #263f8f;
+  background: white;
+  color: #263f8f;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-weight: 900;
+  cursor: pointer;
+  margin-bottom: 25px;
+}
+
+.turma-hero {
+  background: #2d4397;
+  color: white;
+  border: 9px solid #c5282f;
+  border-radius: 36px;
+  padding: 42px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.13);
+}
+
+.turma-label {
+  background: white;
+  color: #263f8f;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-weight: 900;
+}
+
+.turma-hero h2 {
+  font-size: 48px;
+  margin: 18px 0 10px;
+  font-weight: 900;
+}
+
+.turma-hero p {
+  font-size: 21px;
+  margin: 0;
+  font-weight: 800;
+}
+
+.turma-icon {
+  font-size: 90px;
+}
+
+.turma-info-grid {
+  margin-top: 35px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.info-card {
+  background: white;
+  border: 4px solid #e4e4eb;
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+}
+
+.info-card h3 {
+  margin: 0;
+  color: #263f8f;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.info-card p {
+  margin: 10px 0 0;
+  color: #c5282f;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.form-card {
+  margin-top: 35px;
+  background: white;
+  border: 4px solid #e4e4eb;
+  border-radius: 25px;
+  padding: 30px;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+}
+
+.form-card h3,
+.alunos-section h3 {
+  font-size: 30px;
+  color: #263f8f;
+  margin-top: 0;
+  font-weight: 900;
+}
+
+.form-card form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: end;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-weight: 900;
+  color: #263f8f;
+}
+
+.input-group input {
+  height: 50px;
+  border: 3px solid #263f8f;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  outline: none;
+}
+
+.btn-primary {
+  height: 50px;
+  border: none;
+  border-radius: 14px;
+  padding: 0 28px;
+  background: #c5282f;
+  color: white;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #8e1b20;
+}
+
+.alunos-section {
+  margin-top: 35px;
+}
+
+.alunos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aluno-card {
+  background: #eff6ff;
+  border: 4px solid #3a7be0;
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.aluno-card h4 {
+  margin: 0;
+  color: #263f8f;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.aluno-card p {
+  margin: 6px 0 0;
+  color: #55586b;
+  font-weight: 800;
+}
+
+.btn-remover {
+  border: none;
+  background: #c5282f;
+  color: white;
+  border-radius: 13px;
+  padding: 12px 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.empty-card {
+  background: white;
+  border: 4px dashed #d8d8e3;
+  border-radius: 22px;
+  padding: 30px;
+  color: #55586b;
+  font-weight: 800;
+  text-align: center;
+}
+
+.loading {
+  font-family: "Nunito", sans-serif;
+  text-align: center;
+  margin-top: 80px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #263f8f;
+}
+
+.input-editar {
+  width: 100%;
+  max-width: 620px;
+  height: 56px;
+  padding: 0 22px;
+  border-radius: 14px;
+  border: none;
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #263f8f;
+  background: white;
+  outline: none;
+}
+
+.input-editar::placeholder {
+  color: #7b8196;
+  opacity: 1;
+  font-weight: 800;
+}
+
+.acoes-edicao {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-editar-turma,
+.btn-salvar,
+.btn-cancelar {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-editar-turma {
+  margin-top: 15px;
+  background: #2563eb;
+  color: white;
+}
+
+.btn-salvar {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-cancelar {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-editar-turma:hover,
+.btn-salvar:hover,
+.btn-cancelar:hover {
+  transform: scale(1.03);
+}
+
+
+
+
+@media (max-width: 1000px) {
+  .topbar {
+    padding: 0 5%;
+  }
+
+  .topbar nav {
+    gap: 14px;
+  }
+
+  .turma-container {
+    width: 90%;
+  }
+
+  .turma-hero h2 {
+    font-size: 36px;
+  }
+
+  .turma-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card form {
+    grid-template-columns: 1fr;
+  }
+
+  .aluno-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+}
+.input-busca {
+  width: 100%;
+  height: 50px;
+  border: 3px solid #263f8f;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.btn-adicionar {
+  background: #263f8f;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-adicionado {
+  background: #b9bdcc;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: not-allowed;
+}
