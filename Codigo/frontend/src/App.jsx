@@ -13,6 +13,7 @@ import SignupPage from "./pages/SignupPage";
 import ProfessorDashboard from "./pages/Professor/ProfessorDashboard";
 import QuizzesPage from "./pages/Quiz/QuizzesPage";
 import AlunoDashboard from './pages/Aluno/AlunoDashboard.jsx';
+import ArticlesPage from './pages/Artigos/ArticlesPage.jsx';
 
 export default function App() {
   return (
@@ -50,7 +51,10 @@ export default function App() {
 
           {/* DASHBOARD ALUNO */}
           <Route path="/dashboard-aluno" element={<AlunoDashboard />} />
-          
+
+          {/* ARTIGOS */}
+          <Route path="/artigos" element={<ArticlesPage />} />
+
         </Routes>
       </AuthProvider>
     </BrowserRouter>
