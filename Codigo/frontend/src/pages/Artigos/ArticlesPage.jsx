@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Footer from '@/components/Footer.jsx';
-import { Trash2, BookOpen, User } from 'lucide-react';
+import { Trash2, BookOpen, User, X, Plus } from 'lucide-react';
 
 const BASE = '/api';
 
@@ -18,6 +17,7 @@ async function request(path, options = {}) {
 }
 
 const listArticles = () => request('/artigos');
+const createArticle = (body) => request('/artigos', { method: 'POST', body: JSON.stringify(body) });
 const deleteArticle = (id) => request(`/artigos/${id}`, { method: 'DELETE' });
 
 function authorTagClasses(tipoAutor) {
@@ -35,11 +35,15 @@ function authorLabel(tipoAutor) {
 
 export default function ArticlesPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const isProfessor = user?.role === 'teacher';
+  const isStudent = user?.role === 'student';
 
   useEffect(() => {
     fetchArticles();
@@ -67,12 +71,16 @@ export default function ArticlesPage() {
     try {
       await deleteArticle(id);
       setArticles((prev) => prev.filter((a) => a.id !== id));
+      if (selectedArticle?.id === id) setSelectedArticle(null);
     } catch {
       alert('Erro ao excluir o artigo. Tente novamente.');
     }
   }
 
-  const isProfessor = user?.role === 'teacher';
+  function handleArticleSaved(newArticle) {
+    setArticles((prev) => [newArticle, ...prev]);
+    setShowForm(false);
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[hsl(var(--background))]">
@@ -85,12 +93,12 @@ export default function ArticlesPage() {
               Leia e explore os artigos publicados na plataforma.
             </p>
           </div>
-          {isProfessor && (
+          {(isProfessor || isStudent) && (
             <button
-              onClick={() => navigate('/artigos/novo')}
-              className="flex items-center gap-2 rounded-xl bg-[#5B3DF5] px-5 py-3 font-bold text-white transition-colors hover:bg-[#4a2fd4]"
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-5 py-3 font-bold text-white transition-colors hover:bg-[hsl(var(--primary-dark))]"
             >
-              <BookOpen size={18} /> Novo Artigo
+              <Plus size={18} /> Novo Artigo
             </button>
           )}
         </div>
@@ -123,6 +131,7 @@ export default function ArticlesPage() {
                 key={article.id}
                 article={article}
                 canDelete={isProfessor}
+                onClick={() => setSelectedArticle(article)}
                 onDelete={handleDelete}
               />
             ))}
@@ -131,13 +140,73 @@ export default function ArticlesPage() {
       </main>
 
       <Footer />
+
+      {/* Modal: Visualização completa do artigo */}
+      {selectedArticle && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => e.target === e.currentTarget && setSelectedArticle(null)}
+        >
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${authorTagClasses(selectedArticle.tipoAutor)}`}
+              >
+                <User size={12} />
+                {authorLabel(selectedArticle.tipoAutor)}
+                {selectedArticle.autorNome && (
+                  <span className="font-semibold opacity-75">· {selectedArticle.autorNome}</span>
+                )}
+              </span>
+              <button
+                onClick={() => setSelectedArticle(null)}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 py-6">
+              <h2 className="mb-4 text-2xl font-black text-[hsl(var(--secondary))] leading-snug">
+                {selectedArticle.titulo}
+              </h2>
+              <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-[hsl(var(--foreground))]/80">
+                {selectedArticle.conteudo}
+              </p>
+            </div>
+
+            {isProfessor && (
+              <div className="sticky bottom-0 border-t border-gray-100 bg-white px-6 py-4 flex justify-end">
+                <button
+                  onClick={() => handleDelete(selectedArticle.id, selectedArticle.titulo)}
+                  className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
+                >
+                  <Trash2 size={16} /> Excluir artigo
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Formulário de criação */}
+      {showForm && (
+        <NovoArtigoModal
+          user={user}
+          onClose={() => setShowForm(false)}
+          onSaved={handleArticleSaved}
+        />
+      )}
     </div>
   );
 }
 
-function ArticleCard({ article, canDelete, onDelete }) {
+function ArticleCard({ article, canDelete, onClick, onDelete }) {
   return (
-    <div className="group flex flex-col rounded-2xl border-2 border-[hsl(var(--border))] bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div
+      onClick={onClick}
+      className="group flex cursor-pointer flex-col rounded-2xl border-2 border-[hsl(var(--border))] bg-white shadow-sm transition-all hover:border-[hsl(var(--primary))]/40 hover:shadow-md"
+    >
       <div className="flex flex-1 flex-col p-6">
 
         {/* Author tag */}
@@ -172,23 +241,122 @@ function ArticleCard({ article, canDelete, onDelete }) {
         </p>
       </div>
 
-      {/* Footer actions */}
-      <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-6 py-3">
-        <button
-          onClick={() => {/* navigate to article detail */}}
-          className="text-sm font-bold text-[hsl(var(--primary))] transition-colors hover:text-[hsl(var(--primary))]/80"
-        >
-          Ler artigo →
-        </button>
-
-        {canDelete && (
+      {/* Delete action — stops propagation so card click doesn't open modal */}
+      {canDelete && (
+        <div className="flex items-center justify-end border-t border-[hsl(var(--border))] px-6 py-3">
           <button
-            onClick={() => onDelete(article.id, article.titulo)}
+            onClick={(e) => { e.stopPropagation(); onDelete(article.id, article.titulo); }}
             className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-red-500 transition-colors hover:bg-red-50"
           >
             <Trash2 size={14} /> Excluir
           </button>
-        )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NovoArtigoModal({ user, onClose, onSaved }) {
+  const [titulo, setTitulo] = useState('');
+  const [conteudo, setConteudo] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  const tipoAutor = user?.role === 'teacher' ? 'PROFESSOR' : 'ALUNO';
+
+  async function handleSalvar() {
+    if (!titulo.trim()) return alert('Informe o título do artigo.');
+    if (!conteudo.trim()) return alert('Informe o conteúdo do artigo.');
+
+    setSalvando(true);
+    try {
+      const payload = {
+        titulo,
+        conteudo,
+        autorId: user?.id,
+        autorNome: user?.nome,
+        tipoAutor,
+      };
+      const saved = await createArticle(payload);
+      onSaved(saved);
+    } catch (err) {
+      alert(`Erro ao salvar o artigo: ${err.message}`);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+          <h2 className="text-2xl font-black text-[hsl(var(--secondary))]">Novo Artigo</h2>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-5">
+
+          <div>
+            <label className="mb-1 block text-sm font-bold text-gray-700">
+              Título <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Título do artigo"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-bold text-gray-700">
+              Conteúdo <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={conteudo}
+              onChange={(e) => setConteudo(e.target.value)}
+              placeholder="Escreva o conteúdo do artigo aqui..."
+              rows={10}
+              className="w-full resize-y rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+            />
+          </div>
+
+          <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-semibold text-gray-500">
+              Publicando como{' '}
+              <span
+                className={`font-black ${tipoAutor === 'PROFESSOR' ? 'text-[#5B3DF5]' : 'text-[#FF4F8B]'}`}
+              >
+                {tipoAutor === 'PROFESSOR' ? 'Professor' : 'Aluno'}
+              </span>
+              {user?.nome && (
+                <> · <span className="text-gray-700">{user.nome}</span></>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 border-t border-gray-100 bg-white px-6 py-4">
+          <button
+            onClick={handleSalvar}
+            disabled={salvando}
+            className="w-full rounded-xl bg-[hsl(var(--primary))] py-3 font-black text-white hover:bg-[hsl(var(--primary-dark))] disabled:opacity-60"
+          >
+            {salvando ? 'Publicando...' : 'Publicar Artigo'}
+          </button>
+        </div>
       </div>
     </div>
   );
