@@ -61,4 +61,9 @@ public class TurmaController {
     public List<Aluno> listarAlunos(@PathVariable Long idTurma) {
         return service.listarAlunos(idTurma);
     }
+
+    @GetMapping("/professor/{idProfessor}")
+    public List<Turma> listarPorProfessor(@PathVariable Long idProfessor) {
+        return service.listarPorProfessor(idProfessor);
+    }
 }

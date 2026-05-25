@@ -1,7 +1,10 @@
 package com.nextstep.Quiz;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 // Repository é a camada que fala diretamente com o banco de dados.
 // Ao estender JpaRepository<Quiz, Long>, ganhamos GRATUITAMENTE os métodos:
@@ -22,4 +25,13 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     // "Professor" -> campo professor em Quiz
     // "Id"        -> campo id dentro de Professor
     List<Quiz> findByProfessorId(Long professorId);
+
+
+    @Query("""
+    SELECT q
+    FROM Quiz q
+    JOIN q.turmas t
+    WHERE t.idTurma = :idTurma
+    """)
+    List<Quiz> buscarPorTurma(@Param("idTurma") Long idTurma);
 }

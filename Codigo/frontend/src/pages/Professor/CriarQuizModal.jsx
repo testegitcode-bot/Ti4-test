@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { criarQuiz, atualizarQuiz } from '@/services/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { X, Plus, Trash2, Search } from 'lucide-react';
+import { criarQuiz, atualizarQuiz, listTurmas } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import toast from 'react-hot-toast';
 
@@ -48,6 +48,13 @@ function mapQuestoesFromQuiz(quiz) {
   }));
 }
 
+function mapTurmaIdsFromQuiz(quiz) {
+  if (!quiz?.turmas?.length) return [];
+  return quiz.turmas
+    .map((turma) => turma.idTurma)
+    .filter((id) => id !== null && id !== undefined);
+}
+
 export default function CriarQuizModal({ onClose, onSaved, quizParaEditar = null }) {
   const { user } = useAuth();
   const editando = quizParaEditar !== null;
@@ -56,7 +63,56 @@ export default function CriarQuizModal({ onClose, onSaved, quizParaEditar = null
   const [descricao, setDescricao] = useState(quizParaEditar?.descricao || '');
   const [nivelIngles, setNivelIngles] = useState(quizParaEditar?.nivelIngles || 'A1');
   const [questoes, setQuestoes] = useState(() => mapQuestoesFromQuiz(quizParaEditar));
+  const [turmasProfessor, setTurmasProfessor] = useState([]);
+  const [turmasSelecionadas, setTurmasSelecionadas] = useState(() => mapTurmaIdsFromQuiz(quizParaEditar));
+  const [carregandoTurmas, setCarregandoTurmas] = useState(true);
+  const [buscarTurma, setBuscarTurma] = useState('');
   const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    async function carregarTurmasProfessor() {
+      setCarregandoTurmas(true);
+      try {
+        const turmas = await listTurmas();
+        const turmasDoProfessor = turmas.filter((turma) => turma?.professor?.id === user?.id);
+        setTurmasProfessor(turmasDoProfessor);
+      } catch {
+        toast.error('Could not load classes.');
+      } finally {
+        setCarregandoTurmas(false);
+      }
+    }
+
+    if (user?.id) {
+      carregarTurmasProfessor();
+    }
+  }, [user?.id]);
+
+  const turmasFiltradas = useMemo(() => {
+    const termo = buscarTurma.trim().toLowerCase();
+    if (!termo) return turmasProfessor;
+    return turmasProfessor.filter((t) => t.nome.toLowerCase().includes(termo));
+  }, [turmasProfessor, buscarTurma]);
+
+  const todasTurmasSelecionadas = useMemo(() => {
+    if (turmasProfessor.length === 0) return false;
+    return turmasSelecionadas.length === turmasProfessor.length;
+  }, [turmasProfessor, turmasSelecionadas]);
+
+  function alternarTurma(idTurma) {
+    setTurmasSelecionadas((prev) => (
+      prev.includes(idTurma)
+        ? prev.filter((id) => id !== idTurma)
+        : [...prev, idTurma]
+    ));
+  }
+
+  function alternarSelecionarTodas() {
+    setTurmasSelecionadas((prev) => {
+      if (prev.length === turmasProfessor.length) return [];
+      return turmasProfessor.map((turma) => turma.idTurma);
+    });
+  }
 
   /* ── Questão helpers ────────────────────────────────────────── */
   function adicionarQuestao() {
@@ -113,6 +169,7 @@ export default function CriarQuizModal({ onClose, onSaved, quizParaEditar = null
   /* ── Submit ─────────────────────────────────────────────────── */
   async function handleSalvar() {
     if (!titulo.trim()) return toast.error('Inform the quiz title.');
+    if (turmasSelecionadas.length === 0) return toast.error('Select at least one class.');
     for (let i = 0; i < questoes.length; i++) {
       const q = questoes[i];
       if (!q.enunciado.trim()) return toast.error(`Question ${i + 1}: inform the question text.`);
@@ -129,6 +186,7 @@ export default function CriarQuizModal({ onClose, onSaved, quizParaEditar = null
         descricao,
         professorId: user.id,
         nivelIngles,
+        turmaIds: turmasSelecionadas,
         questoes,
       };
       const saved = editando
@@ -213,6 +271,78 @@ export default function CriarQuizModal({ onClose, onSaved, quizParaEditar = null
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Classes */}
+          <div>
+            <label className="mb-1 block text-sm font-bold text-gray-700">Classes <span className="text-red-500">*</span></label>
+
+            {carregandoTurmas ? (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                Loading classes...
+              </div>
+            ) : turmasProfessor.length === 0 ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                You do not have any classes yet. Create a class before creating a quiz.
+              </div>
+            ) : (
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+
+                {/* Search + Select All */}
+                <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2">
+                  <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-bold text-[hsl(var(--secondary))]">
+                    <input
+                      type="checkbox"
+                      checked={todasTurmasSelecionadas}
+                      onChange={alternarSelecionarTodas}
+                      className="accent-[hsl(var(--primary))]"
+                    />
+                    All
+                  </label>
+                  <div className="relative flex-1">
+                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={buscarTurma}
+                      onChange={(e) => setBuscarTurma(e.target.value)}
+                      placeholder="Search class..."
+                      className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-8 pr-3 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]/20"
+                    />
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {turmasSelecionadas.length}/{turmasProfessor.length}
+                  </span>
+                </div>
+
+                {/* Scrollable list */}
+                <div className="max-h-44 overflow-y-auto p-2">
+                  {turmasFiltradas.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-gray-400">No classes found.</p>
+                  ) : (
+                    <div className="grid gap-1.5 sm:grid-cols-2">
+                      {turmasFiltradas.map((turma) => (
+                        <label
+                          key={turma.idTurma}
+                          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+                            turmasSelecionadas.includes(turma.idTurma)
+                              ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5'
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={turmasSelecionadas.includes(turma.idTurma)}
+                            onChange={() => alternarTurma(turma.idTurma)}
+                            className="accent-[hsl(var(--primary))]"
+                          />
+                          <span className="truncate font-semibold text-gray-700">{turma.nome}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Questions */}
