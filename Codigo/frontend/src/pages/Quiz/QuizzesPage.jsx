@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, Plus, Search, Pencil, Trash2, AlertTriangle, Users } from 'lucide-react';
+import { BookOpen, Plus, Search, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { listQuizzesByProfessor, deletarQuiz } from '@/services/api';
 import CriarQuizModal from '@/pages/Professor/CriarQuizModal.jsx';
@@ -259,27 +259,6 @@ export default function QuizzesPage() {
                       <BookOpen size={12} />
                       <span>{q.questoes?.length ?? 0} question{(q.questoes?.length ?? 0) !== 1 ? 's' : ''}</span>
                     </div>
-
-                    {/* Turma tags */}
-                    {q.turmas?.length > 0 && (
-                      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                        <Users size={11} className="shrink-0 text-gray-400" />
-                        {q.turmas.slice(0, 3).map((turma) => (
-                          <span
-                            key={turma.idTurma}
-                            className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-semibold text-indigo-600 truncate max-w-[120px]"
-                            title={turma.nome}
-                          >
-                            {turma.nome}
-                          </span>
-                        ))}
-                        {q.turmas.length > 3 && (
-                          <span className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-500">
-                            +{q.turmas.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Action bar — visible on hover for professors */}

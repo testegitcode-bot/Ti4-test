@@ -17,33 +17,27 @@ function GerenciarTurmas() {
   }, []);
 
   async function carregarTurmas() {
-  try {
-    const usuario = JSON.parse(localStorage.getItem("nextstep_user"));
-    const idProfessor = usuario?.id;
+    try {
+      console.log("Buscando turmas em:", API);
 
-    if (!idProfessor) {
-      toast.error("Teacher not found.");
-      return;
+      const resposta = await fetch(API);
+
+      console.log("Status ao buscar turmas:", resposta.status);
+
+      if (!resposta.ok) {
+        throw new Error(`Erro ao carregar turmas. Status: ${resposta.status}`);
+      }
+
+      const dados = await resposta.json();
+
+      console.log("Turmas recebidas:", dados);
+
+      setTurmas(dados);
+    } catch (erro) {
+      console.error("Erro ao carregar turmas:", erro);
+      toast.error("Error loading classes.");
     }
-
-    const url = `${API}/professor/${idProfessor}`;
-
-    console.log("Buscando turmas do professor em:", url);
-
-    const resposta = await fetch(url);
-
-    if (!resposta.ok) {
-      throw new Error(`Erro ao carregar turmas. Status: ${resposta.status}`);
-    }
-
-    const dados = await resposta.json();
-
-    setTurmas(dados);
-  } catch (erro) {
-    console.error("Erro ao carregar turmas:", erro);
-    toast.error("Error loading classes.");
   }
-}
 
   async function criarTurma(e) {
     e.preventDefault();

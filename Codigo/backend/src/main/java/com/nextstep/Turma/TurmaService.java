@@ -126,8 +126,4 @@ public class TurmaService {
 
         return turma.getAlunos();
     }
-
-    public List<Turma> listarPorProfessor(Long idProfessor) {
-        return turmaRepository.findByProfessorId(idProfessor);
-    }
 }

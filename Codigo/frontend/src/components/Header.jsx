@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,24 @@ import { useAuth } from "@/contexts/AuthContext.jsx";
 
 export default function Header() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const isTeacher =
-  user?.role === "teacher" || user?.role === "PROFESSOR";
-
-  const isStudent =
-  user?.role === "student" || user?.role === "ALUNO";
+  const isTeacher = user?.role === "teacher";
+  const isStudent = user?.role === "student";
 
   function getLinks() {
     if (!user) {
       return [
         { label: "Home", to: "/" },
+        { label: "Articles", to: "/articles" },
       ];
     }
 
     if (isTeacher) {
       return [
         { label: "Dashboard", to: "/professor/dashboard" },
-        { label: "Classes", to: "/turmas" },
+        { label: "Classes", to: "/Turmas" },
         { label: "Quizzes", to: "/quizzes" },
         { label: "Articles", to: "/articles" },
       ];
@@ -39,6 +36,7 @@ export default function Header() {
         { label: "Games", to: "/games" },
         { label: "Ranking", to: "/ranking" },
         { label: "Articles", to: "/articles" },
+        { label: "Profile", to: "/profile" },
         { label: "Dashboard", to: "/dashboard-aluno" },
       ];
     }
@@ -51,7 +49,6 @@ export default function Header() {
   function handleLogout() {
     logout();
     setOpen(false);
-    navigate("/");
   }
 
   return (

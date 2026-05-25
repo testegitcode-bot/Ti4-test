@@ -268,10 +268,9 @@ export default function AlunoDashboard() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {turmas.map((turma) => (
-                <button
-                  key={turma.idTurma || turma.id}
-                  onClick={() => navigate(`/aluno/turmas/${turma.idTurma || turma.id}`)}
-                  className="rounded-xl border-2 border-[hsl(var(--border))] p-4 text-left transition hover:border-[hsl(var(--primary))] hover:shadow-md"
+                <div
+                  key={turma.id}
+                  className="rounded-xl border-2 border-[hsl(var(--border))] p-4"
                 >
                   <h3 className="font-black text-[hsl(var(--secondary))]">
                     {turma.nome || 'Unnamed class'}
@@ -284,7 +283,7 @@ export default function AlunoDashboard() {
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
                     <strong>Teacher:</strong> {turma.professor || '—'}
                   </p>
-                </button>
+                </div>
               ))}
             </div>
           )}

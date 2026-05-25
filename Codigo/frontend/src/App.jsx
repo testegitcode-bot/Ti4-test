@@ -12,16 +12,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ProfessorDashboard from "./pages/Professor/ProfessorDashboard";
 import QuizzesPage from "./pages/Quiz/QuizzesPage";
-import AlunoDashboard from "./pages/Aluno/AlunoDashboard.jsx";
-import QuizzesAluno from "./pages/QuizzesAluno/QuizzesAluno";
-import AlunoTurmaConteudo from "./pages/TurmaAluno/AlunoTurmaConteudo.jsx";
-import ArticlesPage from "./pages/Articles/ArticlesPage.jsx";
-
-// Games
-import GamesPage from "./pages/Games/GamesPage";
-import TypingGame from "./pages/Games/TypingGame";
-import FishingGame from "./pages/Games/FishingGame";
-import RecyclingGame from "./pages/Games/RecyclingGame";
+import AlunoDashboard from './pages/Aluno/AlunoDashboard.jsx';
 
 export default function App() {
   return (
@@ -30,15 +21,15 @@ export default function App() {
         <Header />
 
         <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              borderRadius: "18px",
-              padding: "16px",
-              fontWeight: "700",
-            },
-          }}
-        />
+  position="top-right"
+  toastOptions={{
+    style: {
+      borderRadius: "18px",
+      padding: "16px",
+      fontWeight: "700",
+    },
+  }}
+/>
 
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -56,23 +47,10 @@ export default function App() {
 
           {/* QUIZZES */}
           <Route path="/quizzes" element={<QuizzesPage />} />
-          <Route path="/quizzesAluno" element={<QuizzesAluno />} />
 
-          {/* ALUNO / DASHBOARD */}
+          {/* DASHBOARD ALUNO */}
           <Route path="/dashboard-aluno" element={<AlunoDashboard />} />
-          <Route
-            path="/aluno/turmas/:idTurma"
-            element={<AlunoTurmaConteudo />}
-          />
-
-          {/* GAMES */}
-          <Route path="/games" element={<GamesPage />} />
-          <Route path="/games/typing" element={<TypingGame />} />
-          <Route path="/games/fishing" element={<FishingGame />} />
-          <Route path="/games/recycling" element={<RecyclingGame />} />
-
-          {/* ARTICLES */}
-          <Route path="/articles" element={<ArticlesPage />} />
+          
         </Routes>
       </AuthProvider>
     </BrowserRouter>

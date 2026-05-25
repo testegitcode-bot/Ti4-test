@@ -11,6 +11,5 @@ public record QuizRequestDTO(
         String descricao,
         Long professorId,
         NivelIngles nivelIngles,
-        List<Long> turmaIds,
         List<QuestaoDTO> questoes
 ) {}

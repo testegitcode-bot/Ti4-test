@@ -1,7 +1,6 @@
 package com.nextstep.Quiz;
 
 import com.nextstep.Professor.Professor;
-import com.nextstep.Turma.Turma;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,14 +32,6 @@ public class Quiz {
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Questao> questoes = new ArrayList<>();
-
-    @ManyToMany
-    @JoinTable(
-            name = "quiz_turma",
-            joinColumns = @JoinColumn(name = "quiz_id"),
-            inverseJoinColumns = @JoinColumn(name = "turma_id")
-    )
-    private List<Turma> turmas = new ArrayList<>();
 
     // Registra quando o quiz foi criado. Preenchido automaticamente pelo Service.
     private LocalDateTime dataCriacao;
@@ -100,13 +91,5 @@ public class Quiz {
 
     public void setNivelIngles(NivelIngles nivelIngles) {
         this.nivelIngles = nivelIngles;
-    }
-
-    public List<Turma> getTurmas() {
-        return turmas;
-    }
-
-    public void setTurmas(List<Turma> turmas) {
-        this.turmas = turmas;
     }
 }

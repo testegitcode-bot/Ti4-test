@@ -394,30 +394,3 @@
   font-weight: 900;
   cursor: not-allowed;
 }
-
-.turma-switch {
-  display: flex;
-  gap: 14px;
-  margin: 28px 0;
-  background: white;
-  border: 3px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 10px;
-}
-
-.switch-btn {
-  flex: 1;
-  border: none;
-  border-radius: 14px;
-  padding: 14px 18px;
-  background: transparent;
-  color: #263f8f;
-  font-weight: 900;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.switch-btn.ativo {
-  background: #263f8f;
-  color: white;
-}

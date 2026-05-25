@@ -2,9 +2,6 @@ package com.nextstep.Professor;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.nextstep.Turma.TurmaRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,12 +10,10 @@ import java.util.Optional;
 public class ProfessorService {
 
     private final ProfessorRepository repository;
-    private final TurmaRepository turmaRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public ProfessorService(ProfessorRepository repository, TurmaRepository turmaRepository, PasswordEncoder passwordEncoder) {
+    public ProfessorService(ProfessorRepository repository, PasswordEncoder passwordEncoder) {
         this.repository = repository;
-        this.turmaRepository = turmaRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -69,7 +64,11 @@ public class ProfessorService {
                 professor.setEmail(dto.getEmail());
                 professor.setBio(dto.getBio());
                 professor.setTelefone(dto.getTelefone());
-                professor.setSenha(dto.getSenha());
+
+                // Atualiza senha apenas se vier preenchida
+                if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
+                    professor.setSenha(passwordEncoder.encode(dto.getSenha()));
+                }
 
                 return repository.save(professor);
             })
@@ -77,15 +76,7 @@ public class ProfessorService {
     }
 
     // DELETAR
-    @Transactional
     public void deletar(Long id) {
-
-        Professor professor = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
-
-        turmaRepository.desvincularProfessorDasTurmas(id);
-        turmaRepository.removerAlocacoesDoProfessor(id);
-
-        repository.delete(professor);
+        repository.deleteById(id);
     }
 }
