@@ -1,0 +1,267 @@
+.ranking-page {
+  min-height: 100vh;
+  background: hsl(var(--background));
+  padding: 3rem 1.5rem;
+}
+
+.ranking-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ranking-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  align-items: center;
+  border: 6px solid hsl(var(--primary));
+  border-radius: 36px;
+  background: linear-gradient(135deg, hsl(var(--secondary)), #3452c8);
+  color: white;
+  padding: 3rem;
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.14);
+}
+
+.ranking-hero::after {
+  content: "★";
+  position: absolute;
+  right: 3rem;
+  top: 50%;
+  transform: translateY(-50%) rotate(14deg);
+  font-size: 8rem;
+  color: rgba(255, 255, 255, 0.16);
+}
+
+.ranking-title-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ranking-title-row h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.ranking-hero p {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.8rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.ranking-filtro {
+  position: relative;
+  z-index: 1;
+  min-width: 280px;
+}
+
+.ranking-filtro label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 900;
+}
+
+.ranking-filtro select {
+  width: 100%;
+  height: 54px;
+  border: 3px solid white;
+  border-radius: 18px;
+  padding: 0 1rem;
+  background: white;
+  color: hsl(var(--secondary));
+  font-size: 1rem;
+  font-weight: 900;
+  outline: none;
+  cursor: pointer;
+}
+
+.ranking-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem 0 1.4rem;
+}
+
+.ranking-actions h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: hsl(var(--secondary));
+}
+
+.ranking-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  color: white;
+  padding: 0.9rem 1.4rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 5px 0 hsl(1, 72%, 29%);
+}
+
+.ranking-actions button:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.ranking-lista {
+  display: grid;
+  gap: 1rem;
+}
+
+.ranking-card {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  border: 4px solid #e5e7eb;
+  border-radius: 28px;
+  background: white;
+  padding: 1.4rem;
+  box-shadow: 0 8px 0 rgba(15, 23, 42, 0.08);
+}
+
+.ranking-posicao {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: hsl(var(--secondary));
+  color: white;
+  font-weight: 900;
+}
+
+.ranking-numero {
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.ranking-info h3 {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: hsl(var(--secondary));
+}
+
+.ranking-info p {
+  margin-top: 0.2rem;
+  font-weight: 800;
+  color: hsl(var(--muted-foreground));
+}
+
+.ranking-pontos {
+  min-width: 120px;
+  text-align: right;
+}
+
+.ranking-pontos strong {
+  display: block;
+  font-size: 2rem;
+  font-weight: 900;
+  color: hsl(var(--primary));
+}
+
+.ranking-pontos span {
+  font-weight: 800;
+  color: hsl(var(--muted-foreground));
+}
+
+.ranking-pos-1 {
+  border-color: #facc15;
+  background: #fffbeb;
+}
+
+.ranking-pos-1 .ranking-posicao {
+  background: #facc15;
+  color: hsl(var(--secondary));
+}
+
+.ranking-pos-2 {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.ranking-pos-2 .ranking-posicao {
+  background: #cbd5e1;
+  color: hsl(var(--secondary));
+}
+
+.ranking-pos-3 {
+  border-color: #fb923c;
+  background: #fff7ed;
+}
+
+.ranking-pos-3 .ranking-posicao {
+  background: #fb923c;
+  color: white;
+}
+
+.ranking-empty {
+  border: 4px solid #e5e7eb;
+  border-radius: 28px;
+  background: white;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.ranking-empty h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: hsl(var(--secondary));
+}
+
+.ranking-empty p {
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: hsl(var(--muted-foreground));
+}
+
+@media (max-width: 768px) {
+  .ranking-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+  }
+
+  .ranking-hero::after {
+    display: none;
+  }
+
+  .ranking-title-row h1 {
+    font-size: 2.2rem;
+  }
+
+  .ranking-filtro {
+    width: 100%;
+  }
+
+  .ranking-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .ranking-card {
+    grid-template-columns: 60px 1fr;
+  }
+
+  .ranking-pontos {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding-left: 76px;
+  }
+}

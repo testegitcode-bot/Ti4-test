@@ -70,24 +70,8 @@ export const criarProfessor = (body)     => request('/professores',       { meth
 export const updateTeacher = (id, body)  => request(`/professores/${id}`, { method: 'PUT',    body: JSON.stringify(body) });
 export const deleteTeacher = (id)        => request(`/professores/${id}`, { method: 'DELETE' });
 
-/* ── TURMAS ──────────────────────────────────────────────────── */
-export const listTurmas              = ()         => request('/turmas');
-export const listTurmasByProfessor   = (profId)   => request(`/turmas/professor/${profId}`);
-export const listTurmasByStudent     = (alunoId)  => request(`/turmas/aluno/${alunoId}`);
-export const listStudentsByTurma     = (turmaId)  => request(`/turmas/${turmaId}/alunos`);
-
-/* ── ARTIGOS ─────────────────────────────────────────────────── */
-export const listArticles            = ()                          => request('/artigos');
-export const listArticlesForTeacher  = (profId, params = {})      => {
-  const qs = new URLSearchParams();
-  if (params.turmaId) qs.set('turmaId', params.turmaId);
-  if (params.alunoId) qs.set('alunoId', params.alunoId);
-  const query = qs.toString() ? `?${qs}` : '';
-  return request(`/artigos/professor/${profId}${query}`);
-};
-export const listArticlesForStudent  = (alunoId)                  => request(`/artigos/aluno/${alunoId}`);
-export const createArticle           = (body)                     => request('/artigos', { method: 'POST', body: JSON.stringify(body) });
-export const deleteArticle           = (id)                       => request(`/artigos/${id}`, { method: 'DELETE' });
+/* ── CLASSES (Turmas) ──────────────────────────────────────── */
+export const listTurmas = ()             => request('/turmas');
 
 /* ── QUIZZES ─────────────────────────────────────────────────── */
 export const listQuizzes          = ()          => request('/quizzes');
@@ -96,3 +80,40 @@ export const listQuizzesByProfessor = (profId)  => request(`/quizzes/professor/$
 export const criarQuiz            = (body)      => request('/quizzes', { method: 'POST', body: JSON.stringify(body) });
 export const atualizarQuiz        = (id, body)  => request(`/quizzes/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const deletarQuiz          = (id)        => request(`/quizzes/${id}`, { method: 'DELETE' });
+
+/* ── ARTICLES / ARTIGOS ─────────────────────────────────────── */
+export const listArticles = () => request('/artigos');
+
+export const listArticlesForStudent = (studentId) =>
+  request(`/artigos/aluno/${studentId}`);
+
+export const listArticlesForTeacher = (teacherId, filters = {}) => {
+  const params = new URLSearchParams();
+
+  if (filters.turmaId) params.append('turmaId', filters.turmaId);
+  if (filters.alunoId) params.append('alunoId', filters.alunoId);
+
+  const query = params.toString();
+
+  return request(`/artigos/professor/${teacherId}${query ? `?${query}` : ''}`);
+};
+
+export const createArticle = (body) =>
+  request('/artigos', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const deleteArticle = (id) =>
+  request(`/artigos/${id}`, {
+    method: 'DELETE',
+  });
+
+export const listTurmasByProfessor = (professorId) =>
+  request(`/turmas/professor/${professorId}`);
+
+export const listStudentsByTurma = (turmaId) =>
+  request(`/turmas/${turmaId}/alunos`);
+
+export const listTurmasByStudent = (studentId) =>
+  request(`/alunos/${studentId}/turmas`);

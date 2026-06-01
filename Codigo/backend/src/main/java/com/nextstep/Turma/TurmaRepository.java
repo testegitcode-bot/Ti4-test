@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface TurmaRepository extends JpaRepository<Turma, Long> {
 
+    List<Turma> findByProfessorId(Long professorId);
     @Query("""
         SELECT new com.nextstep.Turma.TurmaResumoDTO(
             t.idTurma,
@@ -34,4 +35,12 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
     @Modifying
     @Query(value = "DELETE FROM enturmacao WHERE id_aluno = :idAluno", nativeQuery = true)
     void removerAlunoDasEnturmacoes(@Param("idAluno") Long idAluno);
+
+    @Modifying
+    @Query(value = "UPDATE turma SET id_admin = NULL WHERE id_admin = :idProfessor", nativeQuery = true)
+    void desvincularProfessorDasTurmas(@Param("idProfessor") Long idProfessor);
+
+    @Modifying
+    @Query(value = "DELETE FROM alocacao WHERE id_professor = :idProfessor", nativeQuery = true)
+    void removerAlocacoesDoProfessor(@Param("idProfessor") Long idProfessor);
 }

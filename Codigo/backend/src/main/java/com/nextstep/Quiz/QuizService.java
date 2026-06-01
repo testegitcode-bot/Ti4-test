@@ -2,9 +2,12 @@ package com.nextstep.Quiz;
 
 import com.nextstep.Professor.Professor;
 import com.nextstep.Professor.ProfessorRepository;
+import com.nextstep.Turma.Turma;
+import com.nextstep.Turma.TurmaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,10 +24,16 @@ public class QuizService {
     // antes de salvar o Quiz (evita o erro TransientPropertyValueException).
     private final QuizRepository quizRepository;
     private final ProfessorRepository professorRepository;
+    private final TurmaRepository turmaRepository;
 
-    public QuizService(QuizRepository quizRepository, ProfessorRepository professorRepository) {
+    public QuizService(
+            QuizRepository quizRepository,
+            ProfessorRepository professorRepository,
+            TurmaRepository turmaRepository
+    ) {
         this.quizRepository = quizRepository;
         this.professorRepository = professorRepository;
+        this.turmaRepository = turmaRepository;
     }
 
     // =====================================================================
@@ -50,6 +59,7 @@ public class QuizService {
                 .orElseThrow(() -> new RuntimeException(
                         "Professor não encontrado com id: " + dto.professorId()));
         quiz.setProfessor(professor);
+        quiz.setTurmas(resolverTurmasObrigatorias(dto.turmaIds(), dto.professorId()));
 
         // 3. Mapeia a lista de QuestaoDTO para entidades Questao.
         if (dto.questoes() != null) {
@@ -128,6 +138,7 @@ public class QuizService {
                             .orElseThrow(() -> new RuntimeException(
                                     "Professor não encontrado com id: " + dto.professorId()));
                     quizExistente.setProfessor(professor);
+                    quizExistente.setTurmas(resolverTurmasObrigatorias(dto.turmaIds(), dto.professorId()));
 
                     quizExistente.getQuestoes().clear();
 
@@ -182,5 +193,29 @@ public class QuizService {
             // questao.setPontos(...)             → salva esse valor no campo pontos
             questao.setPontos(questao.getDificuldade().getValorPontos());
         }
+    }
+
+    private List<Turma> resolverTurmasObrigatorias(List<Long> turmaIds, Long professorId) {
+        if (turmaIds == null || turmaIds.isEmpty()) {
+            throw new RuntimeException("Selecione ao menos uma turma para o quiz.");
+        }
+
+        List<Turma> turmas = new ArrayList<>();
+        for (Long turmaId : turmaIds) {
+            Turma turma = turmaRepository.findById(turmaId)
+                    .orElseThrow(() -> new RuntimeException("Turma não encontrada com id: " + turmaId));
+
+            if (turma.getProfessor() == null || !turma.getProfessor().getId().equals(professorId)) {
+                throw new RuntimeException("A turma " + turmaId + " não pertence ao professor informado.");
+            }
+
+            turmas.add(turma);
+        }
+
+        return turmas;
+    }
+
+    public List<Quiz> listarPorTurma(Long idTurma) {
+        return quizRepository.buscarPorTurma(idTurma);
     }
 }
