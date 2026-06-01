@@ -117,3 +117,13 @@ export const listStudentsByTurma = (turmaId) =>
 
 export const listTurmasByStudent = (studentId) =>
   request(`/alunos/${studentId}/turmas`);
+
+/* ── REVIEWS (Resenhas) ─────────────────────────────────────── */
+export const listReviews = (articleId) =>
+  request(`/artigos/${articleId}/reviews`);
+
+export const createReview = (articleId, body) =>
+  request(`/artigos/${articleId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });

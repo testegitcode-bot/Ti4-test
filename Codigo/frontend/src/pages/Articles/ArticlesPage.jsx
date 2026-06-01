@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpenText,
   CalendarDays,
   GraduationCap,
+  MessageSquare,
   Plus,
   Search,
   Trash2,
@@ -14,10 +15,12 @@ import Footer from "@/components/Footer.jsx";
 import { useAuth } from "@/contexts/AuthContext.jsx";
 import {
   createArticle,
+  createReview,
   deleteArticle,
   listArticles,
   listArticlesForStudent,
   listArticlesForTeacher,
+  listReviews,
   listStudentsByTurma,
   listTurmasByProfessor,
   listTurmasByStudent,
@@ -34,7 +37,7 @@ function authorTagClasses(tipoAutor) {
 function authorLabel(tipoAutor) {
   if (tipoAutor === "PROFESSOR") return "Professor";
   if (tipoAutor === "ALUNO") return "Aluno";
-  return tipoAutor ?? "Autor";
+  return tipoAutor ?? "Author";
 }
 
 export default function ArticlesPage() {
@@ -46,6 +49,7 @@ export default function ArticlesPage() {
   const [articles, setArticles] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [students, setStudents] = useState([]);
+  const [reviewCounts, setReviewCounts] = useState({});
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -101,12 +105,15 @@ export default function ArticlesPage() {
         ]);
 
         setTurmas(turmasAluno || []);
-        setArticles(artigosAluno || []);
+        const artigos = artigosAluno || [];
+        setArticles(artigos);
+        await carregarReviewCounts(artigos);
         return;
       }
 
       const todos = await listArticles();
       setArticles(todos || []);
+      await carregarReviewCounts(todos || []);
     } catch (err) {
       toast.error(`Erro ao carregar artigos: ${err.message}`);
     } finally {
@@ -121,13 +128,44 @@ export default function ArticlesPage() {
         alunoId: selectedAluno,
       });
 
-      setArticles(data || []);
+      const artigos = data || [];
+      setArticles(artigos);
+      await carregarReviewCounts(artigos);
     } catch (err) {
       toast.error(`Erro ao filtrar artigos: ${err.message}`);
     } finally {
       setLoading(false);
     }
   }
+
+  async function carregarReviewCounts(artigos) {
+    const professorArticles = artigos.filter((a) => a.tipoAutor === "PROFESSOR");
+    if (professorArticles.length === 0) return;
+
+    const counts = await Promise.all(
+      professorArticles.map(async (a) => {
+        try {
+          const reviews = await listReviews(a.id);
+          return { id: a.id, count: reviews?.length ?? 0 };
+        } catch {
+          return { id: a.id, count: 0 };
+        }
+      })
+    );
+
+    setReviewCounts((prev) => {
+      const next = { ...prev };
+      counts.forEach(({ id, count }) => { next[id] = count; });
+      return next;
+    });
+  }
+
+  const updateReviewCount = useCallback((articleId, delta) => {
+    setReviewCounts((prev) => ({
+      ...prev,
+      [articleId]: (prev[articleId] ?? 0) + delta,
+    }));
+  }, []);
 
   async function handleDelete(article) {
     const confirmed = window.confirm(
@@ -199,7 +237,7 @@ export default function ArticlesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[hsl(var(--background))]">
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12">
-        
+
         {/* Top Header Section */}
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -249,7 +287,7 @@ export default function ArticlesPage() {
 
                 {turmas.map((turma) => {
                   const turmaId = turma.idTurma || turma.id;
-                  
+
                   return (
                     <option key={turmaId} value={turmaId}>
                       {turma.nome}
@@ -267,10 +305,10 @@ export default function ArticlesPage() {
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold outline-none focus:border-[hsl(var(--primary))] disabled:bg-gray-100 disabled:text-gray-400"
               >
                 <option value="">Todos os alunos</option>
-                
+
                 {students.map((student) => {
                   const studentId = student.id || student.idAluno;
-                 
+
                   return (
                     <option key={studentId} value={studentId}>
                       {student.nome}
@@ -312,6 +350,7 @@ export default function ArticlesPage() {
                   key={article.id}
                   article={article}
                   canDelete={canDelete}
+                  reviewCount={reviewCounts[article.id] ?? 0}
                   formatDate={formatDate}
                   onClick={() => setSelectedArticle(article)}
                   onDelete={() => handleDelete(article)}
@@ -326,67 +365,20 @@ export default function ArticlesPage() {
 
       {/* Modal: View Full Article */}
       {selectedArticle && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setSelectedArticle(null)}
-        >
-          <div
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${authorTagClasses(selectedArticle.tipoAutor)}`}
-                >
-                  <UserRound size={12} />
-                  {authorLabel(selectedArticle.tipoAutor)} · {selectedArticle.autorNome || "Não informado"}
-                </span>
-                
-                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                  <CalendarDays size={12} />
-                  {formatDate(selectedArticle.dataCriacao)}
-                </span>
-
-                {selectedArticle.turmaNome && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--secondary))]/10 px-3 py-1 text-xs font-bold text-[hsl(var(--secondary))]">
-                    <GraduationCap size={12} />
-                    {selectedArticle.turmaNome}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setSelectedArticle(null)}
-                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="px-6 py-6">
-              <h2 className="mb-4 text-3xl font-black text-[hsl(var(--secondary))] leading-snug">
-                {selectedArticle.titulo}
-              </h2>
-              <p className="whitespace-pre-wrap text-base leading-relaxed text-[hsl(var(--foreground))]/80">
-                {selectedArticle.conteudo}
-              </p>
-            </div>
-
-            {(isTeacher || (selectedArticle.tipoAutor === "ALUNO" && isStudent && Number(selectedArticle.autorId) === Number(user?.id))) && (
-              <div className="sticky bottom-0 border-t border-gray-100 bg-white px-6 py-4 flex justify-end">
-                <button
-                  onClick={() => handleDelete(selectedArticle)}
-                  className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
-                >
-                  <Trash2 size={16} /> Excluir artigo
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <ArticleModal
+          article={selectedArticle}
+          user={user}
+          isStudent={isStudent}
+          isTeacher={isTeacher}
+          formatDate={formatDate}
+          reviewCount={reviewCounts[selectedArticle.id] ?? 0}
+          onReviewAdded={() => updateReviewCount(selectedArticle.id, 1)}
+          onDelete={() => handleDelete(selectedArticle)}
+          onClose={() => setSelectedArticle(null)}
+        />
       )}
 
-      {/* Modal: Creation Form (Maintains original fields layout) */}
+      {/* Modal: Creation Form */}
       {showForm && (
         <NovoArtigoModal
           user={user}
@@ -401,9 +393,11 @@ export default function ArticlesPage() {
   );
 }
 
-/* ── Sub-componentes Limpos e Formatados (Bolt Style) ────────────────── */
+/* ── ArticleCard ─────────────────────────────────────────────── */
 
-function ArticleCard({ article, canDelete, formatDate, onClick, onDelete }) {
+function ArticleCard({ article, canDelete, reviewCount, formatDate, onClick, onDelete }) {
+  const isProfessorArticle = article.tipoAutor === "PROFESSOR";
+
   return (
     <div
       onClick={onClick}
@@ -435,18 +429,26 @@ function ArticleCard({ article, canDelete, formatDate, onClick, onDelete }) {
           {article.titulo}
         </h2>
 
-        {/* MUDANÇA AQUI: Removemos a div de fade-out e usamos line-clamp puro */}
         <p className="text-sm font-medium leading-relaxed text-[hsl(var(--foreground))]/70 whitespace-pre-wrap line-clamp-3">
           {article.conteudo}
         </p>
 
         <p className="mt-4 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-          Clique para ler o artigo completo →
+          Click to read full article →
         </p>
       </div>
 
-      {canDelete && (
-        <div className="flex items-center justify-end border-t border-[hsl(var(--border))] px-6 py-2.5 bg-gray-50/50 rounded-b-2xl">
+      <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-6 py-2.5 bg-gray-50/50 rounded-b-2xl">
+        {isProfessorArticle ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+            <MessageSquare size={13} className="text-gray-400" />
+            {reviewCount === 1 ? "1 review" : `${reviewCount} reviews`}
+          </span>
+        ) : (
+          <span />
+        )}
+
+        {canDelete && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -456,11 +458,283 @@ function ArticleCard({ article, canDelete, formatDate, onClick, onDelete }) {
           >
             <Trash2 size={14} /> Excluir
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
+
+/* ── ArticleModal ────────────────────────────────────────────── */
+
+function ArticleModal({
+  article,
+  user,
+  isStudent,
+  isTeacher,
+  formatDate,
+  reviewCount,
+  onReviewAdded,
+  onDelete,
+  onClose,
+}) {
+  const isProfessorArticle = article.tipoAutor === "PROFESSOR";
+  const [activeTab, setActiveTab] = useState("content");
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
+  const [reviewText, setReviewText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [localReviewCount, setLocalReviewCount] = useState(reviewCount);
+
+  useEffect(() => {
+    setLocalReviewCount(reviewCount);
+  }, [reviewCount]);
+
+  async function loadReviews() {
+    if (reviewsLoaded) return;
+    try {
+      const data = await listReviews(article.id);
+      setReviews(data || []);
+      setReviewsLoaded(true);
+    } catch {
+      setReviews([]);
+      setReviewsLoaded(true);
+    }
+  }
+
+  function handleTabChange(tab) {
+    setActiveTab(tab);
+    if (tab === "reviews") loadReviews();
+  }
+
+  async function handleSubmitReview(e) {
+    e.preventDefault();
+
+    if (!reviewText.trim()) {
+      toast.error("Write your review before submitting.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const saved = await createReview(article.id, {
+        conteudo: reviewText.trim(),
+        autorId: user.id,
+        autorNome: user.nome,
+      });
+
+      setReviews((prev) => [saved, ...prev]);
+      setLocalReviewCount((c) => c + 1);
+      onReviewAdded();
+      setReviewText("");
+      toast.success("Review submitted!");
+    } catch (err) {
+      toast.error(`Failed to submit review: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const canDelete =
+    isTeacher ||
+    (article.tipoAutor === "ALUNO" &&
+      isStudent &&
+      Number(article.autorId) === Number(user?.id));
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header — metadata */}
+        <div className="shrink-0 flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${authorTagClasses(article.tipoAutor)}`}
+            >
+              <UserRound size={12} />
+              {authorLabel(article.tipoAutor)} · {article.autorNome || "Unknown"}
+            </span>
+
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+              <CalendarDays size={12} />
+              {formatDate(article.dataCriacao)}
+            </span>
+
+            {article.turmaNome && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--secondary))]/10 px-3 py-1 text-xs font-bold text-[hsl(var(--secondary))]">
+                <GraduationCap size={12} />
+                {article.turmaNome}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Article title */}
+        <div className="shrink-0 px-6 pt-5 pb-1">
+          <h2 className="text-3xl font-black text-[hsl(var(--secondary))] leading-snug">
+            {article.titulo}
+          </h2>
+        </div>
+
+        {/* Tabs — only for professor articles */}
+        {isProfessorArticle && (
+          <div className="shrink-0 flex gap-1 border-b border-gray-100 px-6 pt-4">
+            <button
+              onClick={() => handleTabChange("content")}
+              className={`pb-3 px-1 text-sm font-bold transition-all border-b-2 -mb-px ${
+                activeTab === "content"
+                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Article Content
+            </button>
+            <button
+              onClick={() => handleTabChange("reviews")}
+              className={`pb-3 px-1 ml-4 text-sm font-bold transition-all border-b-2 -mb-px inline-flex items-center gap-1.5 ${
+                activeTab === "reviews"
+                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <MessageSquare size={14} />
+              Student Reviews
+              <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-black min-w-[20px] ${
+                activeTab === "reviews"
+                  ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]"
+                  : "bg-gray-100 text-gray-500"
+              }`}>
+                {localReviewCount}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* Content Tab (or default for non-professor articles) */}
+          {(!isProfessorArticle || activeTab === "content") && (
+            <div>
+              <p className="whitespace-pre-wrap text-base leading-relaxed text-[hsl(var(--foreground))]/80">
+                {article.conteudo}
+              </p>
+
+              {/* Review form — only for students on professor articles */}
+              {isProfessorArticle && isStudent && (
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <h3 className="mb-3 text-sm font-black text-[hsl(var(--secondary))] uppercase tracking-wider">
+                    Write a Review
+                  </h3>
+                  <form onSubmit={handleSubmitReview} className="space-y-3">
+                    <textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Share your thoughts on this article..."
+                      rows={4}
+                      className="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/20 transition-all"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="rounded-xl bg-[hsl(var(--primary))] px-5 py-2.5 text-sm font-black text-white transition-all hover:bg-[hsl(var(--primary-dark))] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {submitting ? "Submitting..." : "Submit Review"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Reviews Tab */}
+          {isProfessorArticle && activeTab === "reviews" && (
+            <div>
+              {!reviewsLoaded && (
+                <div className="flex justify-center py-10">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-[hsl(var(--primary))] border-t-transparent" />
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length === 0 && (
+                <div className="rounded-2xl border-2 border-dashed border-gray-200 px-6 py-12 text-center">
+                  <MessageSquare size={32} className="mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm font-semibold text-gray-400">No reviews yet.</p>
+                  <p className="mt-1 text-xs text-gray-400">Be the first to review this article.</p>
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length > 0 && (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} formatDate={formatDate} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — delete action */}
+        {canDelete && (
+          <div className="shrink-0 border-t border-gray-100 bg-white px-6 py-4 flex justify-end rounded-b-3xl">
+            <button
+              onClick={onDelete}
+              className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
+            >
+              <Trash2 size={16} /> Excluir artigo
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── ReviewCard ──────────────────────────────────────────────── */
+
+function ReviewCard({ review, formatDate }) {
+  const initials = review.autorNome
+    ? review.autorNome
+        .split(" ")
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary))]/15 text-xs font-black text-[hsl(var(--primary))]">
+          {initials}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-[hsl(var(--secondary))]">
+            {review.autorNome || "Anonymous"}
+          </p>
+          <p className="text-xs text-gray-400">{formatDate(review.dataCriacao)}</p>
+        </div>
+      </div>
+      <p className="text-sm leading-relaxed text-[hsl(var(--foreground))]/80 whitespace-pre-wrap">
+        {review.conteudo}
+      </p>
+    </div>
+  );
+}
+
+/* ── NovoArtigoModal ─────────────────────────────────────────── */
 
 function NovoArtigoModal({ user, turmas, isStudent, isTeacher, onClose, onSaved }) {
   const [titulo, setTitulo] = useState("");
