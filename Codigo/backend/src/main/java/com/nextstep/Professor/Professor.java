@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "professor")
@@ -21,8 +22,12 @@ public class Professor {
     private String email;
     @JsonIgnore
     private String senha;
-    private String telefone; // Novo campo para o Perfil
-    private String bio;      // Novo campo para o Perfil (Biografia)
+    private String telefone;
+    private String bio;
+    private boolean ativo = true;
+    private String codigoValidacao;
+    private LocalDateTime dataExpiracaoCodigo;
+
     public Professor() {}
 
     public Professor(String nome, String email, String senha, String telefone, String bio) {
@@ -49,4 +54,13 @@ public class Professor {
 
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
+
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+
+    public String getCodigoValidacao() { return codigoValidacao; }
+    public void setCodigoValidacao(String codigoValidacao) { this.codigoValidacao = codigoValidacao; }
+
+    public LocalDateTime getDataExpiracaoCodigo() { return dataExpiracaoCodigo; }
+    public void setDataExpiracaoCodigo(LocalDateTime dataExpiracaoCodigo) { this.dataExpiracaoCodigo = dataExpiracaoCodigo; }
 }
