@@ -106,12 +106,12 @@ export default function ProfessorDashboard() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[hsl(var(--background))]">
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-4xl font-black text-[hsl(var(--secondary))]">Painel do Professor</h1>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Bem-vindo, <strong>{professor.nome || user?.nome || 'Professor'}</strong>!
+              Welcome, <strong>{professor.nome || user?.nome || 'Professor'}</strong>!
             </p>
           </div>
           <button
@@ -122,33 +122,28 @@ export default function ProfessorDashboard() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DashboardCard
-            icon={<Users size={32} />}
-            title="Turmas"
-            description="Gerencie suas turmas de alunos."
+            icon={<Users size={36} />}
+            title="Classes"
+            description="Manage your classes."
             onClick={() => navigate('/turmas')}
           />
+
           <DashboardCard
-            icon={<BookOpen size={32} />}
+            icon={<BookOpen size={36} />}
             title="Quizzes"
-            description="Crie, filtre e gerencie seus quizzes."
+            description="Create, filter, and manage your quizzes."
             onClick={() => navigate('/quizzes')}
-          />
-          <DashboardCard
-            icon={<BarChart3 size={32} />}
-            title="Desempenho"
-            description="Acompanhe o progresso."
-            disabled
           />
         </div>
 
-        <div className="mt-10 rounded-2xl border-2 border-[hsl(var(--border))] bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-xl font-black text-[hsl(var(--secondary))]">Dados do Perfil</h2>
+        <div className="mt-10 rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-8 shadow-sm">
+          <h2 className="mb-4 text-xl font-black text-[hsl(var(--secondary))]">Profile Data</h2>
           <div className="grid gap-2 text-sm">
-            <p><strong>Nome:</strong> {professor.nome || user?.nome || '—'}</p>
-            <p><strong>E-mail:</strong> {professor.email || user?.email || '—'}</p>
-            <p><strong>Cargo:</strong> Professor</p>
+            <p><strong>Name:</strong> {professor.nome || user?.nome || '—'}</p>
+            <p><strong>EEmail:</strong> {professor.email || user?.email || '—'}</p>
+            <p><strong>Position:</strong> Professor</p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -285,11 +280,21 @@ function DashboardCard({ icon, title, description, onClick, disabled }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex flex-col items-start gap-3 rounded-2xl border-2 border-[hsl(var(--border))] bg-white p-6 transition hover:border-[hsl(var(--primary))] disabled:opacity-50 disabled:hover:border-[hsl(var(--border))]"
+      className="group flex min-h-[170px] w-full flex-col items-start justify-between rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-7 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-[hsl(var(--primary))] hover:shadow-lg disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-[hsl(var(--border))]"
     >
-      <div className="text-[hsl(var(--primary))]">{icon}</div>
-      <h3 className="font-black text-[hsl(var(--secondary))]">{title}</h3>
-      <p className="text-xs text-[hsl(var(--muted-foreground))]">{description}</p>
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] transition group-hover:bg-[hsl(var(--primary))] group-hover:text-white">
+        {icon}
+      </div>
+
+      <div>
+        <h3 className="text-xl font-black text-[hsl(var(--secondary))]">
+          {title}
+        </h3>
+
+        <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+          {description}
+        </p>
+      </div>
     </button>
   );
 }

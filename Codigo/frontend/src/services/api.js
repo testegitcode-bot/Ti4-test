@@ -3,20 +3,6 @@
  *
  * All calls to the Spring Boot backend (port 8080) go through here.
  * Vite's proxy redirects /api → http://localhost:8080 automatically.
- *
- * Available backend endpoints:
- *  POST   /alunos          — register student  { nome, matricula, senha }
- *  GET    /alunos          — list all students
- *  GET    /alunos/:id      — get student by id
- *  PUT    /alunos/:id      — update student
- *  DELETE /alunos/:id      — delete student
- *
- *  POST   /professores     — register teacher  { nome, email }
- *  GET    /professores     — list all teachers
- *  GET    /professores/:id — get teacher by id
- *
- *  GET    /quizzes         — list all quizzes
- *  GET    /quizzes/:id     — get quiz by id
  */
 
 const BASE = '/api';
@@ -26,9 +12,13 @@ async function request(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
+
   if (res.status === 204) return null;
+
   const data = await res.json().catch(() => null);
+
   if (!res.ok) throw new Error(data || `Error ${res.status}`);
+
   return data;
 }
 
@@ -46,57 +36,107 @@ export const registerAuth = (body) =>
   });
 
 /* ── STUDENTS (Alunos) ──────────────────────────────────────── */
-export const listStudents  = ()          => request('/alunos');
-export const getStudent    = (id)        => request(`/alunos/${id}`);
-export const criarAluno    = (body)      => request('/alunos',       { method: 'POST',   body: JSON.stringify(body) });
-export const updateStudent = (id, body)  => request(`/alunos/${id}`, { method: 'PUT',    body: JSON.stringify(body) });
-export const deleteStudent = (id)        => request(`/alunos/${id}`, { method: 'DELETE' });
+export const listStudents = () => request('/alunos');
 
-/**
- * Student login — filters GET /alunos by matricula + senha.
- * Update only this function once the backend has a dedicated auth endpoint.
- */
+export const getStudent = (id) => request(`/alunos/${id}`);
+
+export const criarAluno = (body) =>
+  request('/alunos', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const updateStudent = (id, body) =>
+  request(`/alunos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
+export const deleteStudent = (id) =>
+  request(`/alunos/${id}`, {
+    method: 'DELETE',
+  });
+
 export async function loginAluno(matricula, senha) {
   const list = await listStudents();
-  const student = list.find((s) => s.matricula === matricula && s.senha === senha);
+  const student = list.find(
+    (s) => s.matricula === matricula && s.senha === senha
+  );
+
   if (!student) throw new Error('Invalid enrollment number or password.');
+
   return student;
 }
 
 /* ── TEACHERS (Professores) ──────────────────────────────────── */
-export const listTeachers  = ()          => request('/professores');
-export const getTeacher    = (id)        => request(`/professores/${id}`);
-export const criarProfessor = (body)     => request('/professores',       { method: 'POST',   body: JSON.stringify(body) });
-export const updateTeacher = (id, body)  => request(`/professores/${id}`, { method: 'PUT',    body: JSON.stringify(body) });
-export const deleteTeacher = (id)        => request(`/professores/${id}`, { method: 'DELETE' });
+export const listTeachers = () => request('/professores');
+
+export const getTeacher = (id) => request(`/professores/${id}`);
+
+export const criarProfessor = (body) =>
+  request('/professores', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const updateTeacher = (id, body) =>
+  request(`/professores/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
+export const deleteTeacher = (id) =>
+  request(`/professores/${id}`, {
+    method: 'DELETE',
+  });
 
 /* ── CLASSES (Turmas) ──────────────────────────────────────── */
-export const listTurmas = ()             => request('/turmas');
+export const listTurmas = () => request('/turmas');
+
+export const listTurmasByProfessor = (professorId) =>
+  request(`/turmas/professor/${professorId}`);
+
+export const listStudentsByTurma = (turmaId) =>
+  request(`/turmas/${turmaId}/alunos`);
+
+export const listTurmasByStudent = (studentId) =>
+  request(`/alunos/${studentId}/turmas`);
 
 /* ── QUIZZES ─────────────────────────────────────────────────── */
-export const listQuizzes          = ()          => request('/quizzes');
-export const getQuiz              = (id)        => request(`/quizzes/${id}`);
-export const listQuizzesByProfessor = (profId)  => request(`/quizzes/professor/${profId}`);
-export const criarQuiz            = (body)      => request('/quizzes', { method: 'POST', body: JSON.stringify(body) });
-export const atualizarQuiz        = (id, body)  => request(`/quizzes/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-export const deletarQuiz          = (id)        => request(`/quizzes/${id}`, { method: 'DELETE' });
+export const listQuizzes = () => request('/quizzes');
+
+export const getQuiz = (id) => request(`/quizzes/${id}`);
+
+export const listQuizzesByProfessor = (profId) =>
+  request(`/quizzes/professor/${profId}`);
+
+export const criarQuiz = (body) =>
+  request('/quizzes', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const atualizarQuiz = (id, body) =>
+  request(`/quizzes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
+export const deletarQuiz = (id) =>
+  request(`/quizzes/${id}`, {
+    method: 'DELETE',
+  });
 
 /* ── ARTICLES / ARTIGOS ─────────────────────────────────────── */
 export const listArticles = () => request('/artigos');
 
-export const listArticlesForStudent = (studentId) =>
-  request(`/artigos/aluno/${studentId}`);
+export const getArticle = (id) => request(`/artigos/${id}`);
 
-export const listArticlesForTeacher = (teacherId, filters = {}) => {
-  const params = new URLSearchParams();
+export const listArticlesByTeacher = (teacherId) =>
+  request(`/artigos/professor/${teacherId}`);
 
-  if (filters.turmaId) params.append('turmaId', filters.turmaId);
-  if (filters.alunoId) params.append('alunoId', filters.alunoId);
-
-  const query = params.toString();
-
-  return request(`/artigos/professor/${teacherId}${query ? `?${query}` : ''}`);
-};
+export const listArticlesByClass = (turmaId) =>
+  request(`/artigos/turma/${turmaId}`);
 
 export const createArticle = (body) =>
   request('/artigos', {
@@ -109,14 +149,48 @@ export const deleteArticle = (id) =>
     method: 'DELETE',
   });
 
-export const listTurmasByProfessor = (professorId) =>
-  request(`/turmas/professor/${professorId}`);
+/* ── ARTICLE ANSWERS / RESPOSTAS DE ARTIGOS ─────────────────── */
+export const createArticleAnswer = (body) =>
+  request('/respostas-artigo', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 
-export const listStudentsByTurma = (turmaId) =>
-  request(`/turmas/${turmaId}/alunos`);
+export const listAnswersByArticle = (articleId) =>
+  request(`/respostas-artigo/artigo/${articleId}`);
 
-export const listTurmasByStudent = (studentId) =>
-  request(`/alunos/${studentId}/turmas`);
+export const listAnswersByStudent = (studentId) =>
+  request(`/respostas-artigo/aluno/${studentId}`);
+
+export const listPendingArticleAnswers = () =>
+  request('/respostas-artigo/pendentes');
+
+export const listFeaturedArticleAnswers = () =>
+  request('/respostas-artigo/destaques');
+
+export const approveArticleAnswer = (answerId, destaque = false) =>
+  request(`/respostas-artigo/${answerId}/aprovar`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      destaque,
+    }),
+  });
+
+export const rejectArticleAnswer = (answerId, feedback) =>
+  request(`/respostas-artigo/${answerId}/reprovar`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      feedback,
+    }),
+  });
+
+export const resendArticleAnswer = (answerId, conteudo) =>
+  request(`/respostas-artigo/${answerId}/reenviar`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      conteudo,
+    }),
+  });
 
 /* ── REVIEWS (Resenhas) ─────────────────────────────────────── */
 export const listReviews = (articleId) =>

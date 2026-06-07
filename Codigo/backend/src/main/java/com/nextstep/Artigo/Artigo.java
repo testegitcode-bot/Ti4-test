@@ -2,7 +2,6 @@ package com.nextstep.Artigo;
 
 import java.time.LocalDateTime;
 
-import com.nextstep.Aluno.Aluno;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Turma.Turma;
 
@@ -30,12 +29,6 @@ public class Artigo {
     private String conteudo;
 
     private LocalDateTime dataCriacao;
-
-    private String tipoAutor;
-
-    @ManyToOne
-    @JoinColumn(name = "id_aluno")
-    private Aluno aluno;
 
     @ManyToOne
     @JoinColumn(name = "id_professor")
@@ -80,22 +73,6 @@ public class Artigo {
 
     public void setDataCriacao(LocalDateTime dataCriacao) {
         this.dataCriacao = dataCriacao;
-    }
-
-    public String getTipoAutor() {
-        return tipoAutor;
-    }
-
-    public void setTipoAutor(String tipoAutor) {
-        this.tipoAutor = tipoAutor;
-    }
-
-    public Aluno getAluno() {
-        return aluno;
-    }
-
-    public void setAluno(Aluno aluno) {
-        this.aluno = aluno;
     }
 
     public Professor getProfessor() {

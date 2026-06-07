@@ -3,15 +3,16 @@ import "./RankingPage.css";
 import { Trophy, Medal, Crown, RefreshCw } from "lucide-react";
 
 const jogos = [
-  "Typing Game",
-  "Recycling Game",
+  "Global Ranking",
+  "Word Climber",
+  "Recycling Master",
   "Word Fishing",
   "Word Search",
   "Crossword",
 ];
 
 export default function RankingPage() {
-  const [jogoSelecionado, setJogoSelecionado] = useState("Typing Game");
+  const [jogoSelecionado, setJogoSelecionado] = useState("Global Ranking");
   const [ranking, setRanking] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
@@ -25,9 +26,12 @@ export default function RankingPage() {
       setCarregando(true);
       setErro("");
 
-      const resposta = await fetch(
-        `/api/ranking/${encodeURIComponent(jogoSelecionado)}`
-      );
+      const url =
+        jogoSelecionado === "Global Ranking"
+          ? "/api/ranking/global"
+          : `/api/ranking/${encodeURIComponent(jogoSelecionado)}`;
+
+      const resposta = await fetch(url);
 
       if (!resposta.ok) {
         throw new Error("Erro ao carregar ranking.");
@@ -50,6 +54,22 @@ export default function RankingPage() {
     return <span className="ranking-numero">{posicao}</span>;
   }
 
+  function getPontuacao(item) {
+    if (jogoSelecionado === "Global Ranking") {
+      return item.pontuacaoTotal;
+    }
+
+    return item.maiorPontuacao;
+  }
+
+  function getDescricao(item) {
+    if (jogoSelecionado === "Global Ranking") {
+      return `${item.jogosRegistrados} jogos registrados`;
+    }
+
+    return item.nomeJogo;
+  }
+
   return (
     <main className="ranking-page">
       <section className="ranking-container">
@@ -60,7 +80,11 @@ export default function RankingPage() {
               <h1>Ranking</h1>
             </div>
 
-            <p>Veja as maiores pontuações dos alunos por jogo.</p>
+            <p>
+              {jogoSelecionado === "Global Ranking"
+                ? "Veja a pontuação total dos alunos somando todos os jogos."
+                : "Veja as maiores pontuações dos alunos por jogo."}
+            </p>
           </div>
 
           <div className="ranking-filtro">
@@ -101,7 +125,9 @@ export default function RankingPage() {
           <div className="ranking-empty">
             <h2>Nenhuma pontuação ainda</h2>
             <p>
-              Quando os alunos jogarem {jogoSelecionado}, o ranking aparecerá aqui.
+              {jogoSelecionado === "Global Ranking"
+                ? "Quando os alunos jogarem, o ranking global aparecerá aqui."
+                : `Quando os alunos jogarem ${jogoSelecionado}, o ranking aparecerá aqui.`}
             </p>
           </div>
         ) : (
@@ -111,7 +137,7 @@ export default function RankingPage() {
 
               return (
                 <article
-                  key={`${item.nomeAluno}-${item.nomeJogo}-${index}`}
+                  key={`${item.nomeAluno}-${index}`}
                   className={`ranking-card ranking-pos-${posicao}`}
                 >
                   <div className="ranking-posicao">
@@ -120,11 +146,11 @@ export default function RankingPage() {
 
                   <div className="ranking-info">
                     <h3>{item.nomeAluno}</h3>
-                    <p>{item.nomeJogo}</p>
+                    <p>{getDescricao(item)}</p>
                   </div>
 
                   <div className="ranking-pontos">
-                    <strong>{item.maiorPontuacao}</strong>
+                    <strong>{getPontuacao(item)}</strong>
                     <span>pontos</span>
                   </div>
                 </article>

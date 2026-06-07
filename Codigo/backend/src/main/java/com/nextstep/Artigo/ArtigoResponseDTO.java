@@ -8,32 +8,27 @@ public class ArtigoResponseDTO {
     private String titulo;
     private String conteudo;
     private LocalDateTime dataCriacao;
-    private String tipoAutor;
-    private Long autorId;
-    private String autorNome;
+
+    private Long professorId;
+    private String nomeProfessor;
+
     private Long turmaId;
-    private String turmaNome;
+    private String nomeTurma;
 
     public ArtigoResponseDTO(Artigo artigo) {
         this.id = artigo.getId();
         this.titulo = artigo.getTitulo();
         this.conteudo = artigo.getConteudo();
         this.dataCriacao = artigo.getDataCriacao();
-        this.tipoAutor = artigo.getTipoAutor();
-
-        if (artigo.getAluno() != null) {
-            this.autorId = artigo.getAluno().getId();
-            this.autorNome = artigo.getAluno().getNome();
-        }
 
         if (artigo.getProfessor() != null) {
-            this.autorId = artigo.getProfessor().getId();
-            this.autorNome = artigo.getProfessor().getNome();
+            this.professorId = artigo.getProfessor().getId();
+            this.nomeProfessor = artigo.getProfessor().getNome();
         }
 
         if (artigo.getTurma() != null) {
             this.turmaId = artigo.getTurma().getIdTurma();
-            this.turmaNome = artigo.getTurma().getNome();
+            this.nomeTurma = artigo.getTurma().getNome();
         }
     }
 
@@ -53,23 +48,19 @@ public class ArtigoResponseDTO {
         return dataCriacao;
     }
 
-    public String getTipoAutor() {
-        return tipoAutor;
+    public Long getProfessorId() {
+        return professorId;
     }
 
-    public Long getAutorId() {
-        return autorId;
-    }
-
-    public String getAutorNome() {
-        return autorNome;
+    public String getNomeProfessor() {
+        return nomeProfessor;
     }
 
     public Long getTurmaId() {
         return turmaId;
     }
 
-    public String getTurmaNome() {
-        return turmaNome;
+    public String getNomeTurma() {
+        return nomeTurma;
     }
 }

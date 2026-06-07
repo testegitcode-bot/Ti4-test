@@ -2,12 +2,13 @@ package com.nextstep.Artigo;
 
 import java.util.List;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.nextstep.Aluno.Aluno;
-import com.nextstep.Aluno.AlunoRepository;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Professor.ProfessorRepository;
+import com.nextstep.RespostaArtigo.RespostaArtigoRepository;
 import com.nextstep.Turma.Turma;
 import com.nextstep.Turma.TurmaRepository;
 
@@ -15,20 +16,23 @@ import com.nextstep.Turma.TurmaRepository;
 public class ArtigoService {
 
     private final ArtigoRepository artigoRepository;
-    private final AlunoRepository alunoRepository;
     private final ProfessorRepository professorRepository;
     private final TurmaRepository turmaRepository;
+    private final RespostaArtigoRepository respostaArtigoRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public ArtigoService(
             ArtigoRepository artigoRepository,
-            AlunoRepository alunoRepository,
             ProfessorRepository professorRepository,
-            TurmaRepository turmaRepository
+            TurmaRepository turmaRepository,
+            RespostaArtigoRepository respostaArtigoRepository,
+            JdbcTemplate jdbcTemplate
     ) {
         this.artigoRepository = artigoRepository;
-        this.alunoRepository = alunoRepository;
         this.professorRepository = professorRepository;
         this.turmaRepository = turmaRepository;
+        this.respostaArtigoRepository = respostaArtigoRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public ArtigoResponseDTO criar(ArtigoRequestDTO dto) {
@@ -40,16 +44,17 @@ public class ArtigoService {
             throw new RuntimeException("Conteúdo é obrigatório");
         }
 
-        if (dto.getAutorId() == null || dto.getTipoAutor() == null) {
-            throw new RuntimeException("Autor é obrigatório");
+        if (dto.getProfessorId() == null) {
+            throw new RuntimeException("Professor é obrigatório");
         }
 
-        Artigo artigo = new Artigo();
+        Professor professor = professorRepository.findById(dto.getProfessorId())
+                .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
 
+        Artigo artigo = new Artigo();
         artigo.setTitulo(dto.getTitulo());
         artigo.setConteudo(dto.getConteudo());
-
-        String tipoAutor = dto.getTipoAutor().toUpperCase();
+        artigo.setProfessor(professor);
 
         if (dto.getTurmaId() != null) {
             Turma turma = turmaRepository.findById(dto.getTurmaId())
@@ -58,27 +63,7 @@ public class ArtigoService {
             artigo.setTurma(turma);
         }
 
-        if (tipoAutor.equals("ALUNO") || tipoAutor.equals("STUDENT")) {
-            Aluno aluno = alunoRepository.findById(dto.getAutorId())
-                    .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
-
-            artigo.setAluno(aluno);
-            artigo.setTipoAutor("ALUNO");
-
-        } else if (tipoAutor.equals("PROFESSOR") || tipoAutor.equals("TEACHER")) {
-            Professor professor = professorRepository.findById(dto.getAutorId())
-                    .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
-
-            artigo.setProfessor(professor);
-            artigo.setTipoAutor("PROFESSOR");
-
-        } else {
-            throw new RuntimeException("Tipo de autor inválido");
-        }
-
-        Artigo salvo = artigoRepository.save(artigo);
-
-        return new ArtigoResponseDTO(salvo);
+        return new ArtigoResponseDTO(artigoRepository.save(artigo));
     }
 
     public List<ArtigoResponseDTO> listarTodos() {
@@ -88,18 +73,31 @@ public class ArtigoService {
                 .toList();
     }
 
-    public List<ArtigoResponseDTO> listarParaAluno(Long idAluno) {
-        return listarTodos();
+    public ArtigoResponseDTO buscarPorId(Long id) {
+        Artigo artigo = artigoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Artigo não encontrado"));
+
+        return new ArtigoResponseDTO(artigo);
     }
 
-    public List<ArtigoResponseDTO> listarParaProfessor(Long idProfessor, Long idTurma, Long idAluno) {
-        return artigoRepository.filtrarProfessor(idProfessor, idTurma, idAluno)
+    public List<ArtigoResponseDTO> listarPorProfessor(Long professorId) {
+        return artigoRepository.findByProfessorIdOrderByDataCriacaoDesc(professorId)
                 .stream()
                 .map(ArtigoResponseDTO::new)
                 .toList();
     }
 
+    public List<ArtigoResponseDTO> listarPorTurma(Long turmaId) {
+        return artigoRepository.findByTurmaIdTurmaOrderByDataCriacaoDesc(turmaId)
+                .stream()
+                .map(ArtigoResponseDTO::new)
+                .toList();
+    }
+
+    @Transactional
     public void deletar(Long id) {
+        jdbcTemplate.update("DELETE FROM resenha WHERE id_artigo = ?", id);
+        respostaArtigoRepository.deleteByArtigoId(id);
         artigoRepository.deleteById(id);
     }
 }

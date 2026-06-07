@@ -8,6 +8,8 @@ import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
 
 /* ─── Expanded Word Banks ─────────────────────────────────────────── */
+// Objeto THEMES: Armazena os temas disponíveis no jogo e suas respectivas palavras.
+// Cada categoria (ex: sustainability, animals) contém um rótulo visual (label) 
 const THEMES = {
   sustainability: {
     label: '🌱 Sustainability',

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Plus } from "lucide-react";
+import CriarQuizModal from "@/pages/Professor/CriarQuizModal.jsx";
 import "./GerenciarTurma.css";
 
 function GerenciarTurma() {
@@ -14,16 +16,16 @@ function GerenciarTurma() {
 
   const [quizzes, setQuizzes] = useState([]);
   const [quizSelecionado, setQuizSelecionado] = useState(null);
+  const [modalCriarQuizAberto, setModalCriarQuizAberto] = useState(false);
 
   const [resultadosQuiz, setResultadosQuiz] = useState([]);
-  const [carregandoResultados, setCarregandoResultados] =
-    useState(false);
+  const [carregandoResultados, setCarregandoResultados] = useState(false);
 
-  const [resultadoSelecionado, setResultadoSelecionado] =
-    useState(null);
+  const [resultadoSelecionado, setResultadoSelecionado] = useState(null);
+  const [questoesResultado, setQuestoesResultado] = useState([]);
 
-  const [questoesResultado, setQuestoesResultado] =
-    useState([]);
+  const [modalRespostasAberto, setModalRespostasAberto] = useState(false);
+  const [carregandoRespostas, setCarregandoRespostas] = useState(false);
 
   const [editando, setEditando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
@@ -32,8 +34,7 @@ function GerenciarTurma() {
   const API_TURMAS = "http://localhost:8080/turmas";
   const API_ALUNOS = "http://localhost:8080/alunos";
   const API_QUIZZES = "http://localhost:8080/quizzes";
-  const API_RESULTADOS =
-    "http://localhost:8080/resultados-quiz";
+  const API_RESULTADOS = "http://localhost:8080/resultados-quiz";
 
   useEffect(() => {
     carregarTurma();
@@ -58,10 +59,7 @@ function GerenciarTurma() {
   }
 
   async function carregarQuizzesDaTurma() {
-    const res = await fetch(
-      `${API_QUIZZES}/turma/${id}`
-    );
-
+    const res = await fetch(`${API_QUIZZES}/turma/${id}`);
     const data = await res.json();
 
     setQuizzes(data);
@@ -69,47 +67,31 @@ function GerenciarTurma() {
 
   async function carregarResultadosDoQuiz(quiz) {
     setQuizSelecionado(quiz);
-
     setResultadoSelecionado(null);
-
+    setQuestoesResultado([]);
+    setModalRespostasAberto(false);
     setCarregandoResultados(true);
 
     try {
-      const res = await fetch(
-        `${API_RESULTADOS}/quiz/${quiz.id}`
-      );
-
+      const res = await fetch(`${API_RESULTADOS}/quiz/${quiz.id}`);
       const data = await res.json();
 
       console.log("RESULTADOS:", data);
 
       setResultadosQuiz(data);
     } catch (erro) {
-      console.error(
-        "Erro ao carregar resultados:",
-        erro
-      );
-
+      console.error("Erro ao carregar resultados:", erro);
       setResultadosQuiz([]);
     } finally {
       setCarregandoResultados(false);
     }
   }
 
-  async function carregarDetalhesResultado(
-    resultado
-  ) {
-    if (
-      resultadoSelecionado?.id === resultado.id
-    ) {
-      setResultadoSelecionado(null);
-
-      setQuestoesResultado([]);
-
-      return;
-    }
-
+  async function carregarDetalhesResultado(resultado) {
     setResultadoSelecionado(resultado);
+    setQuestoesResultado([]);
+    setModalRespostasAberto(true);
+    setCarregandoRespostas(true);
 
     try {
       const res = await fetch(
@@ -120,13 +102,17 @@ function GerenciarTurma() {
 
       setQuestoesResultado(data);
     } catch (erro) {
-      console.error(
-        "Erro ao carregar respostas:",
-        erro
-      );
-
+      console.error("Erro ao carregar respostas:", erro);
       setQuestoesResultado([]);
+    } finally {
+      setCarregandoRespostas(false);
     }
+  }
+
+  function fecharModalRespostas() {
+    setModalRespostasAberto(false);
+    setResultadoSelecionado(null);
+    setQuestoesResultado([]);
   }
 
   async function adicionarAluno(idAluno) {
@@ -142,12 +128,9 @@ function GerenciarTurma() {
   }
 
   async function removerAluno(idAluno) {
-    await fetch(
-      `${API_TURMAS}/${id}/alunos/${idAluno}`,
-      {
-        method: "DELETE",
-      }
-    );
+    await fetch(`${API_TURMAS}/${id}/alunos/${idAluno}`, {
+      method: "DELETE",
+    });
 
     carregarTurma();
   }
@@ -167,69 +150,78 @@ function GerenciarTurma() {
     });
 
     setEditando(false);
-
     carregarTurma();
   }
 
   function alunoJaNaTurma(idAluno) {
-    return turma.alunos?.some(
-      (a) => a.id === idAluno
-    );
+    return turma.alunos?.some((a) => a.id === idAluno);
   }
 
   function calcularMediaResultados() {
-    if (resultadosQuiz.length === 0)
-      return 0;
+    if (resultadosQuiz.length === 0) return 0;
 
     const soma = resultadosQuiz.reduce(
-      (total, resultado) =>
-        total + (resultado.percentual || 0),
+      (total, resultado) => total + (resultado.percentual || 0),
       0
     );
 
     return soma / resultadosQuiz.length;
   }
 
-  const alunosFiltrados = alunos.filter(
-    (aluno) => {
-      const texto = busca.toLowerCase();
+  const alunosFiltrados = alunos.filter((aluno) => {
+    const texto = busca.toLowerCase();
 
-      return (
-        aluno.nome
-          ?.toLowerCase()
-          .includes(texto) ||
-        aluno.matricula
-          ?.toLowerCase()
-          .includes(texto)
-      );
-    }
-  );
+    return (
+      aluno.nome?.toLowerCase().includes(texto) ||
+      aluno.matricula?.toLowerCase().includes(texto)
+    );
+  });
+
+  function abrirCriarQuiz() {
+    setModalCriarQuizAberto(true);
+  }
+
+  function fecharCriarQuiz() {
+    setModalCriarQuizAberto(false);
+  }
+
+  function handleQuizSalvo(quizSalvo) {
+    setQuizzes((prev) => {
+      const existe = prev.some((quiz) => quiz.id === quizSalvo.id);
+
+      if (existe) {
+        return prev.map((quiz) => (quiz.id === quizSalvo.id ? quizSalvo : quiz));
+      }
+
+      return [quizSalvo, ...prev];
+    });
+
+    carregarQuizzesDaTurma();
+    fecharCriarQuiz();
+    setAbaAtiva("quizzes");
+  }
 
   if (!turma) {
-    return (
-      <p className="loading">
-        Loading...
-      </p>
-    );
+    return <p className="loading">Loading...</p>;
   }
 
   return (
     <div className="gerenciar-turma-page">
+      {modalCriarQuizAberto && (
+        <CriarQuizModal
+          onClose={fecharCriarQuiz}
+          onSaved={handleQuizSalvo}
+          quizParaEditar={null}
+        />
+      )}
       <main className="turma-container">
-        <button
-          className="btn-voltar"
-          onClick={() =>
-            navigate("/turmas")
-          }
-        >
+        <button className="btn-voltar" onClick={() => navigate("/turmas")}>
           ← Back
         </button>
 
         <section className="turma-hero">
           <div>
-            <span className="turma-label">
-              Class
-            </span>
+            <span className="turma-label">Class</span>
 
             {editando ? (
               <>
@@ -237,11 +229,7 @@ function GerenciarTurma() {
                   className="input-editar"
                   type="text"
                   value={novoNome}
-                  onChange={(e) =>
-                    setNovoNome(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setNovoNome(e.target.value)}
                   placeholder="Class name"
                 />
 
@@ -249,21 +237,12 @@ function GerenciarTurma() {
                   className="input-editar"
                   type="text"
                   value={novaSerie}
-                  onChange={(e) =>
-                    setNovaSerie(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setNovaSerie(e.target.value)}
                   placeholder="Grade"
                 />
 
                 <div className="acoes-edicao">
-                  <button
-                    className="btn-salvar"
-                    onClick={
-                      salvarEdicaoTurma
-                    }
-                  >
+                  <button className="btn-salvar" onClick={salvarEdicaoTurma}>
                     Save
                   </button>
 
@@ -271,14 +250,8 @@ function GerenciarTurma() {
                     className="btn-cancelar"
                     onClick={() => {
                       setEditando(false);
-
-                      setNovoNome(
-                        turma.nome
-                      );
-
-                      setNovaSerie(
-                        turma.serie
-                      );
+                      setNovoNome(turma.nome);
+                      setNovaSerie(turma.serie);
                     }}
                   >
                     Cancel
@@ -290,17 +263,12 @@ function GerenciarTurma() {
                 <h2>{turma.nome}</h2>
 
                 <p>
-                  Grade:{" "}
-                  <strong>
-                    {turma.serie}
-                  </strong>
+                  Grade: <strong>{turma.serie}</strong>
                 </p>
 
                 <button
                   className="btn-editar-turma"
-                  onClick={() =>
-                    setEditando(true)
-                  }
+                  onClick={() => setEditando(true)}
                 >
                   Edit Class
                 </button>
@@ -308,60 +276,37 @@ function GerenciarTurma() {
             )}
           </div>
 
-          <div className="turma-icon">
-            📚
-          </div>
+          <div className="turma-icon">📚</div>
         </section>
 
         <section className="turma-info-grid">
           <div className="info-card">
             <h3>Students</h3>
-
-            <p>
-              {turma.alunos?.length ||
-                0}
-            </p>
+            <p>{turma.alunos?.length || 0}</p>
           </div>
 
           <div className="info-card">
             <h3>Quizzes</h3>
-
             <p>{quizzes.length}</p>
           </div>
 
           <div className="info-card">
             <h3>Teacher</h3>
-
-            <p>
-              {turma.professor
-                ?.nome || "—"}
-            </p>
+            <p>{turma.professor?.nome || "—"}</p>
           </div>
         </section>
 
         <section className="turma-switch">
           <button
-            className={
-              abaAtiva === "alunos"
-                ? "switch-btn ativo"
-                : "switch-btn"
-            }
-            onClick={() =>
-              setAbaAtiva("alunos")
-            }
+            className={abaAtiva === "alunos" ? "switch-btn ativo" : "switch-btn"}
+            onClick={() => setAbaAtiva("alunos")}
           >
             Students
           </button>
 
           <button
-            className={
-              abaAtiva === "quizzes"
-                ? "switch-btn ativo"
-                : "switch-btn"
-            }
-            onClick={() =>
-              setAbaAtiva("quizzes")
-            }
+            className={abaAtiva === "quizzes" ? "switch-btn ativo" : "switch-btn"}
+            onClick={() => setAbaAtiva("quizzes")}
           >
             Quizzes
           </button>
@@ -375,29 +320,15 @@ function GerenciarTurma() {
               <div className="alunos-lista">
                 {quizzes.length > 0 ? (
                   quizzes.map((quiz) => (
-                    <div
-                      className="aluno-card"
-                      key={quiz.id}
-                    >
+                    <div className="aluno-card" key={quiz.id}>
                       <div>
-                        <h4>
-                          {quiz.titulo}
-                        </h4>
-
-                        <p>
-                          {quiz.questoes
-                            ?.length || 0}{" "}
-                          questions
-                        </p>
+                        <h4>{quiz.titulo}</h4>
+                        <p>{quiz.questoes?.length || 0} questions</p>
                       </div>
 
                       <button
                         className="btn-adicionar"
-                        onClick={() =>
-                          carregarResultadosDoQuiz(
-                            quiz
-                          )
-                        }
+                        onClick={() => carregarResultadosDoQuiz(quiz)}
                       >
                         View Results
                       </button>
@@ -405,8 +336,7 @@ function GerenciarTurma() {
                   ))
                 ) : (
                   <div className="empty-card">
-                    No quizzes for this
-                    class yet.
+                    No quizzes for this class yet.
                   </div>
                 )}
               </div>
@@ -414,198 +344,69 @@ function GerenciarTurma() {
 
             {quizSelecionado && (
               <section className="alunos-section">
-                <h3>
-                  Results -{" "}
-                  {
-                    quizSelecionado.titulo
-                  }
-                </h3>
+                <h3>Results - {quizSelecionado.titulo}</h3>
 
                 {carregandoResultados ? (
-                  <div className="empty-card">
-                    Loading
-                    results...
-                  </div>
+                  <div className="empty-card">Loading results...</div>
                 ) : (
                   <>
                     <section className="turma-info-grid">
                       <div className="info-card">
-                        <h3>
-                          Answers
-                        </h3>
-
-                        <p>
-                          {
-                            resultadosQuiz.length
-                          }
-                        </p>
+                        <h3>Answers</h3>
+                        <p>{resultadosQuiz.length}</p>
                       </div>
 
                       <div className="info-card">
-                        <h3>
-                          Average
-                        </h3>
-
-                        <p>
-                          {calcularMediaResultados().toFixed(
-                            1
-                          )}
-                          %
-                        </p>
+                        <h3>Average</h3>
+                        <p>{calcularMediaResultados().toFixed(1)}%</p>
                       </div>
 
                       <div className="info-card">
-                        <h3>
-                          Total
-                          Points
-                        </h3>
-
-                        <p>
-                          {resultadosQuiz[0]
-                            ?.totalPontos ||
-                            0}
-                        </p>
+                        <h3>Total Points</h3>
+                        <p>{resultadosQuiz[0]?.totalPontos || 0}</p>
                       </div>
                     </section>
 
                     <div className="alunos-lista">
-                      {resultadosQuiz.length >
-                      0 ? (
-                        resultadosQuiz.map(
-                          (
-                            resultado
-                          ) => {
-                            const expandido =
-                              resultadoSelecionado?.id ===
-                              resultado.id;
+                      {resultadosQuiz.length > 0 ? (
+                        resultadosQuiz.map((resultado) => (
+                          <div className="aluno-card" key={resultado.id}>
+                            <div className="resultado-topo">
+                              <div>
+                                <h4>{resultado.aluno?.nome || "Student"}</h4>
 
-                            return (
-                              <div
-                                className="aluno-card"
-                                key={
-                                  resultado.id
+                                <p>
+                                  ID: {resultado.aluno?.matricula || "—"}
+                                </p>
+
+                                <p>
+                                  Score: {resultado.pontuacao}/
+                                  {resultado.totalPontos}
+                                </p>
+
+                                <p>
+                                  Percentage:{" "}
+                                  {resultado.percentual
+                                    ? resultado.percentual.toFixed(1)
+                                    : "0.0"}
+                                  %
+                                </p>
+                              </div>
+
+                              <button
+                                className="btn-adicionar"
+                                onClick={() =>
+                                  carregarDetalhesResultado(resultado)
                                 }
                               >
-                                <div className="resultado-topo">
-                                  <div>
-                                    <h4>
-                                      {resultado
-                                        .aluno
-                                        ?.nome ||
-                                        "Student"}
-                                    </h4>
-
-                                    <p>
-                                      ID:{" "}
-                                      {resultado
-                                        .aluno
-                                        ?.matricula ||
-                                        "—"}
-                                    </p>
-
-                                    <p>
-                                      Score:{" "}
-                                      {
-                                        resultado.pontuacao
-                                      }
-                                      /
-                                      {
-                                        resultado.totalPontos
-                                      }
-                                    </p>
-
-                                    <p>
-                                      Percentage:{" "}
-                                      {resultado.percentual
-                                        ? resultado.percentual.toFixed(
-                                            1
-                                          )
-                                        : "0.0"}
-                                      %
-                                    </p>
-                                  </div>
-
-                                  <button
-                                    className="btn-adicionar"
-                                    onClick={() =>
-                                      carregarDetalhesResultado(
-                                        resultado
-                                      )
-                                    }
-                                  >
-                                    {expandido
-                                      ? "Hide Answers"
-                                      : "View Answers"}
-                                  </button>
-                                </div>
-
-                                {expandido && (
-                                  <div className="respostas-card">
-                                    {questoesResultado.length >
-                                    0 ? (
-                                      questoesResultado.map(
-                                        (
-                                          resposta
-                                        ) => (
-                                          <div
-                                            className="resposta-item"
-                                            key={
-                                              resposta.id
-                                            }
-                                          >
-                                            <h4>
-                                              {
-                                                resposta
-                                                  .questao
-                                                  ?.enunciado
-                                              }
-                                            </h4>
-
-                                            <p>
-                                              Selected:{" "}
-                                              <strong>
-                                                {resposta
-                                                  .alternativaSelecionada
-                                                  ?.texto ||
-                                                  "—"}
-                                              </strong>
-                                            </p>
-
-                                            <p>
-                                              Result:{" "}
-                                              <strong
-                                                style={{
-                                                  color:
-                                                    resposta.correta
-                                                      ? "green"
-                                                      : "red",
-                                                }}
-                                              >
-                                                {resposta.correta
-                                                  ? "Correct"
-                                                  : "Wrong"}
-                                              </strong>
-                                            </p>
-                                          </div>
-                                        )
-                                      )
-                                    ) : (
-                                      <div className="empty-card">
-                                        No answers
-                                        found.
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                        )
+                                View Answers
+                              </button>
+                            </div>
+                          </div>
+                        ))
                       ) : (
                         <div className="empty-card">
-                          No students
-                          have answered
-                          this quiz yet.
+                          No students have answered this quiz yet.
                         </div>
                       )}
                     </div>
@@ -619,51 +420,28 @@ function GerenciarTurma() {
         {abaAtiva === "alunos" && (
           <>
             <section className="alunos-section">
-              <h3>
-                Class Students
-              </h3>
+              <h3>Class Students</h3>
 
               <div className="alunos-lista">
-                {turma.alunos?.length >
-                0 ? (
-                  turma.alunos.map(
-                    (aluno) => (
-                      <div
-                        className="aluno-card"
-                        key={aluno.id}
-                      >
-                        <div>
-                          <h4>
-                            {
-                              aluno.nome
-                            }
-                          </h4>
-
-                          <p>
-                            ID:{" "}
-                            {
-                              aluno.matricula
-                            }
-                          </p>
-                        </div>
-
-                        <button
-                          className="btn-remover"
-                          onClick={() =>
-                            removerAluno(
-                              aluno.id
-                            )
-                          }
-                        >
-                          Remove
-                        </button>
+                {turma.alunos?.length > 0 ? (
+                  turma.alunos.map((aluno) => (
+                    <div className="aluno-card" key={aluno.id}>
+                      <div>
+                        <h4>{aluno.nome}</h4>
+                        <p>ID: {aluno.matricula}</p>
                       </div>
-                    )
-                  )
+
+                      <button
+                        className="btn-remover"
+                        onClick={() => removerAluno(aluno.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
                 ) : (
                   <div className="empty-card">
-                    No students in
-                    this class yet.
+                    No students in this class yet.
                   </div>
                 )}
               </div>
@@ -677,83 +455,117 @@ function GerenciarTurma() {
                 type="text"
                 placeholder="Search by name or ID..."
                 value={busca}
-                onChange={(e) =>
-                  setBusca(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setBusca(e.target.value)}
               />
             </section>
 
             <section className="alunos-section">
-              <h3>
-                School Students
-              </h3>
+              <h3>School Students</h3>
 
               <div className="alunos-lista">
-                {alunosFiltrados.length >
-                0 ? (
-                  alunosFiltrados.map(
-                    (aluno) => {
-                      const jaTem =
-                        alunoJaNaTurma(
-                          aluno.id
-                        );
+                {alunosFiltrados.length > 0 ? (
+                  alunosFiltrados.map((aluno) => {
+                    const jaTem = alunoJaNaTurma(aluno.id);
 
-                      return (
-                        <div
-                          className="aluno-card"
-                          key={aluno.id}
-                        >
-                          <div>
-                            <h4>
-                              {
-                                aluno.nome
-                              }
-                            </h4>
-
-                            <p>
-                              ID:{" "}
-                              {
-                                aluno.matricula
-                              }
-                            </p>
-                          </div>
-
-                          <button
-                            className={
-                              jaTem
-                                ? "btn-adicionado"
-                                : "btn-adicionar"
-                            }
-                            disabled={
-                              jaTem
-                            }
-                            onClick={() =>
-                              adicionarAluno(
-                                aluno.id
-                              )
-                            }
-                          >
-                            {jaTem
-                              ? "Added"
-                              : "Add"}
-                          </button>
+                    return (
+                      <div className="aluno-card" key={aluno.id}>
+                        <div>
+                          <h4>{aluno.nome}</h4>
+                          <p>ID: {aluno.matricula}</p>
                         </div>
-                      );
-                    }
-                  )
+
+                        <button
+                          className={jaTem ? "btn-adicionado" : "btn-adicionar"}
+                          disabled={jaTem}
+                          onClick={() => adicionarAluno(aluno.id)}
+                        >
+                          {jaTem ? "Added" : "Add"}
+                        </button>
+                      </div>
+                    );
+                  })
                 ) : (
-                  <div className="empty-card">
-                    No students
-                    found.
-                  </div>
+                  <div className="empty-card">No students found.</div>
                 )}
               </div>
             </section>
           </>
         )}
       </main>
+
+      {modalRespostasAberto && (
+        <div className="modal-overlay-respostas" onClick={fecharModalRespostas}>
+          <div
+            className="modal-respostas"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-respostas-header">
+              <div>
+                <h2>Quiz Answers</h2>
+
+                <p>
+                  Student:{" "}
+                  <strong>
+                    {resultadoSelecionado?.aluno?.nome || "Student"}
+                  </strong>
+                </p>
+
+                <p>
+                  Score: {resultadoSelecionado?.pontuacao}/
+                  {resultadoSelecionado?.totalPontos} | Percentage:{" "}
+                  {resultadoSelecionado?.percentual
+                    ? resultadoSelecionado.percentual.toFixed(1)
+                    : "0.0"}
+                  %
+                </p>
+              </div>
+
+              <button
+                className="btn-fechar-modal"
+                onClick={fecharModalRespostas}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-respostas-body">
+              {carregandoRespostas ? (
+                <div className="empty-card">Loading answers...</div>
+              ) : questoesResultado.length > 0 ? (
+                questoesResultado.map((resposta, index) => (
+                  <div className="resposta-modal-item" key={resposta.id}>
+                    <h4>
+                      {index + 1}. {resposta.questao?.enunciado}
+                    </h4>
+
+                    <p>
+                      Selected:{" "}
+                      <strong>
+                        {resposta.alternativaSelecionada?.texto || "—"}
+                      </strong>
+                    </p>
+
+                    <p>
+                      Result:{" "}
+                      <strong
+                        className={
+                          resposta.correta
+                            ? "resultado-correto"
+                            : "resultado-errado"
+                        }
+                      >
+                        {resposta.correta ? "Correct" : "Wrong"}
+                      </strong>
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-card">No answers found.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

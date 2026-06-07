@@ -319,18 +319,18 @@ export default function RecyclingGame() {
   }, [gameState, score, highScore]);
 
   useEffect(() => {
-    if (gameOver && !pontuacaoEnviadaRef.current) {
+    if (gameState === 'over' && !pontuacaoEnviadaRef.current) {
       pontuacaoEnviadaRef.current = true;
 
-      salvarPontuacao("Typing Game", score)
+      salvarPontuacao("Recycling Master", score)
         .then((resposta) => {
           if (resposta) {
-            console.log("Pontuação salva com sucesso");
+            console.log("Pontuação final do Recycling salva com sucesso");
           }
         })
         .catch((erro) => console.error("Erro ao salvar pontuação:", erro));
     }
-  }, [gameOver, score]);
+  }, [gameState, score]);
 
   /* ═══════════════════════════════════════════════════════════
      RENDER

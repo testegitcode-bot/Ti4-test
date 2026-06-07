@@ -8,6 +8,8 @@ import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
 
 /* ── Expanded Word Bank (Sustainability Focus) ── */
+// As palavras estão organizadas por tamanho para permitir futuras expansões 
+// de níveis de dificuldade (Curta, Média e Longa).
 const wordBank = [
   // Short (<= 4 letters)
   'tree', 'leaf', 'wind', 'sun', 'dirt', 'rain', 'pure', 'save', 'eco', 'air',
@@ -147,7 +149,7 @@ export default function TypingGame() {
     if (gameOver && !pontuacaoEnviadaRef.current) {
       pontuacaoEnviadaRef.current = true;
 
-      salvarPontuacao("Typing Game", score)
+      salvarPontuacao("Word Climber", score)
         .then((resposta) => {
           if (resposta) {
             console.log("Pontuação salva com sucesso");

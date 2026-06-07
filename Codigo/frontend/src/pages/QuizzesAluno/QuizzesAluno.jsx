@@ -5,33 +5,34 @@ import { useAuth } from "@/contexts/AuthContext.jsx";
 
 export default function QuizzesAluno() {
   const { idTurma } = useParams();
+
   const [quizzes, setQuizzes] = useState([]);
+  const [quizzesRespondidos, setQuizzesRespondidos] = useState([]);
+
   const [quizSelecionado, setQuizSelecionado] = useState(null);
   const [respostas, setRespostas] = useState({});
   const [finalizado, setFinalizado] = useState(false);
   const [pontuacao, setPontuacao] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-  const { user } = useAuth();
-  useEffect(() => {
-    if (idTurma) {
-      carregarQuizzes();
-    }
-  }, [idTurma]);
 
-  async function carregarQuizzes() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (idTurma && user?.id) {
+      carregarDados();
+    }
+  }, [idTurma, user]);
+
+  async function carregarDados() {
     try {
       setCarregando(true);
       setErro("");
 
-      const resposta = await fetch(`/api/quizzes/turma/${idTurma}`);
-
-      if (!resposta.ok) {
-        throw new Error("Erro ao carregar quizzes.");
-      }
-
-      const dados = await resposta.json();
-      setQuizzes(dados);
+      await Promise.all([
+        carregarQuizzes(),
+        carregarQuizzesRespondidos(),
+      ]);
     } catch (error) {
       console.error(error);
       setErro("Não foi possível carregar os quizzes dessa turma.");
@@ -40,7 +41,40 @@ export default function QuizzesAluno() {
     }
   }
 
+  async function carregarQuizzes() {
+    const resposta = await fetch(`/api/quizzes/turma/${idTurma}`);
+
+    if (!resposta.ok) {
+      throw new Error("Erro ao carregar quizzes.");
+    }
+
+    const dados = await resposta.json();
+    setQuizzes(dados);
+  }
+
+  async function carregarQuizzesRespondidos() {
+    const resposta = await fetch(`/api/resultados-quiz/aluno/${user.id}`);
+
+    if (!resposta.ok) {
+      throw new Error("Erro ao carregar quizzes respondidos.");
+    }
+
+    const dados = await resposta.json();
+
+    const idsRespondidos = dados.map((resultado) => resultado.quiz.id);
+
+    setQuizzesRespondidos(idsRespondidos);
+  }
+
+  function quizJaRespondido(idQuiz) {
+    return quizzesRespondidos.includes(idQuiz);
+  }
+
   function iniciarQuiz(quiz) {
+    if (quizJaRespondido(quiz.id)) {
+      return;
+    }
+
     setQuizSelecionado(quiz);
     setRespostas({});
     setFinalizado(false);
@@ -80,7 +114,7 @@ export default function QuizzesAluno() {
       }
     });
 
-        await fetch("/api/resultados-quiz", {
+    const resposta = await fetch("/api/resultados-quiz", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,16 +126,23 @@ export default function QuizzesAluno() {
         pontuacao: total,
         totalPontos: calcularTotalPontos(quizSelecionado),
         respostas: Object.entries(respostas).map(
-        ([questaoId, alternativaId]) => ({
-          questaoId: Number(questaoId),
-          alternativaId: Number(alternativaId),
+          ([questaoId, alternativaId]) => ({
+            questaoId: Number(questaoId),
+            alternativaId: Number(alternativaId),
           })
         ),
       }),
     });
 
+    if (!resposta.ok) {
+      alert("Erro ao salvar resultado do quiz.");
+      return;
+    }
+
     setPontuacao(total);
     setFinalizado(true);
+
+    setQuizzesRespondidos((prev) => [...prev, quizSelecionado.id]);
   }
 
   function calcularTotalPontos(quiz) {
@@ -131,13 +172,12 @@ export default function QuizzesAluno() {
           <div className="erro-box">
             <h2>Ops!</h2>
             <p>{erro}</p>
-            <button onClick={carregarQuizzes}>Tentar novamente</button>
+            <button onClick={carregarDados}>Tentar novamente</button>
           </div>
         </section>
       </main>
     );
   }
-
 
   return (
     <main className="quizzes-page">
@@ -149,112 +189,130 @@ export default function QuizzesAluno() {
           </div>
         ) : (
           <div className="quizzes-grid">
-            {quizzes.map((quiz) => (
-              <article className="quiz-card" key={quiz.id}>
-                <div className="quiz-card-topo">
-                  <span className="nivel-badge">{quiz.nivelIngles}</span>
-                  <span className="questoes-badge">
-                    {quiz.questoes?.length || 0} questões
-                  </span>
-                </div>
+            {quizzes.map((quiz) => {
+              const respondido = quizJaRespondido(quiz.id);
 
-                <h2>{quiz.titulo}</h2>
-                <p>{quiz.descricao}</p>
+              return (
+                <article
+                  className={`quiz-card ${respondido ? "quiz-bloqueado" : ""}`}
+                  key={quiz.id}
+                >
+                  <div className="quiz-card-topo">
+                    <span className="nivel-badge">{quiz.nivelIngles}</span>
+                    <span className="questoes-badge">
+                      {quiz.questoes?.length || 0} questões
+                    </span>
+                  </div>
 
-                <div className="quiz-card-rodape">
-                  <span>{calcularTotalPontos(quiz)} pontos</span>
+                  <h2>{quiz.titulo}</h2>
+                  <p>{quiz.descricao}</p>
 
-                  <button onClick={() => iniciarQuiz(quiz)}>
-                    Responder
-                  </button>
-                </div>
-              </article>
-            ))}
+                  {respondido && (
+                    <p className="quiz-ja-respondido">
+                      Você já respondeu este quiz.
+                    </p>
+                  )}
+
+                  <div className="quiz-card-rodape">
+                    <span>{calcularTotalPontos(quiz)} pontos</span>
+
+                    <button
+                      onClick={() => iniciarQuiz(quiz)}
+                      disabled={respondido}
+                      className={respondido ? "btn-bloqueado" : ""}
+                    >
+                      {respondido ? "Respondido" : "Responder"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
+
       {quizSelecionado && (
-  <div className="quiz-modal-overlay">
-    <div className="quiz-modal">
-      <button className="quiz-modal-fechar" onClick={voltarParaLista}>
-        ×
-      </button>
+        <div className="quiz-modal-overlay">
+          <div className="quiz-modal">
+            <button className="quiz-modal-fechar" onClick={voltarParaLista}>
+              ×
+            </button>
 
-      <div className="quiz-detalhe-card">
-        <span className="nivel-badge">{quizSelecionado.nivelIngles}</span>
+            <div className="quiz-detalhe-card">
+              <span className="nivel-badge">{quizSelecionado.nivelIngles}</span>
 
-        <h1>{quizSelecionado.titulo}</h1>
-        <p>{quizSelecionado.descricao}</p>
+              <h1>{quizSelecionado.titulo}</h1>
+              <p>{quizSelecionado.descricao}</p>
 
-        <div className="quiz-info">
-          <span>{quizSelecionado.questoes?.length || 0} questões</span>
-          <span>{calcularTotalPontos(quizSelecionado)} pontos possíveis</span>
-        </div>
-      </div>
-
-      <div className="questoes-lista">
-        {quizSelecionado.questoes?.map((questao, index) => (
-          <div className="questao-card" key={questao.id}>
-            <div className="questao-topo">
-              <h3>
-                {index + 1}. {questao.enunciado}
-              </h3>
-
-              <span className={`dificuldade ${questao.dificuldade?.toLowerCase()}`}>
-                {questao.dificuldade}
-              </span>
+              <div className="quiz-info">
+                <span>{quizSelecionado.questoes?.length || 0} questões</span>
+                <span>{calcularTotalPontos(quizSelecionado)} pontos possíveis</span>
+              </div>
             </div>
 
-            <p className="pontos-questao">{questao.pontos} ponto(s)</p>
+            <div className="questoes-lista">
+              {quizSelecionado.questoes?.map((questao, index) => (
+                <div className="questao-card" key={questao.id}>
+                  <div className="questao-topo">
+                    <h3>
+                      {index + 1}. {questao.enunciado}
+                    </h3>
 
-            <div className="alternativas-lista">
-              {questao.alternativas?.map((alternativa) => {
-                const selecionada = respostas[questao.id] === alternativa.id;
+                    <span className={`dificuldade ${questao.dificuldade?.toLowerCase()}`}>
+                      {questao.dificuldade}
+                    </span>
+                  </div>
 
-                let classe = "alternativa";
+                  <p className="pontos-questao">{questao.pontos} ponto(s)</p>
 
-                if (selecionada) classe += " selecionada";
-                if (finalizado && alternativa.correta) classe += " correta";
-                if (finalizado && selecionada && !alternativa.correta) {
-                  classe += " incorreta";
-                }
+                  <div className="alternativas-lista">
+                    {questao.alternativas?.map((alternativa) => {
+                      const selecionada = respostas[questao.id] === alternativa.id;
 
-                return (
-                  <button
-                    key={alternativa.id}
-                    className={classe}
-                    onClick={() => selecionarAlternativa(questao.id, alternativa.id)}
-                    disabled={finalizado}
-                  >
-                    {alternativa.texto}
-                  </button>
-                );
-              })}
+                      let classe = "alternativa";
+
+                      if (selecionada) classe += " selecionada";
+                      if (finalizado && alternativa.correta) classe += " correta";
+                      if (finalizado && selecionada && !alternativa.correta) {
+                        classe += " incorreta";
+                      }
+
+                      return (
+                        <button
+                          key={alternativa.id}
+                          className={classe}
+                          onClick={() => selecionarAlternativa(questao.id, alternativa.id)}
+                          disabled={finalizado}
+                        >
+                          {alternativa.texto}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
+
+            {!finalizado ? (
+              <button
+                className="btn-finalizar"
+                onClick={finalizarQuiz}
+                disabled={!todasQuestoesRespondidas()}
+              >
+                Finalizar quiz
+              </button>
+            ) : (
+              <div className="resultado-card">
+                <h2>Resultado</h2>
+                <p>
+                  Você fez <strong>{pontuacao}</strong> de{" "}
+                  <strong>{calcularTotalPontos(quizSelecionado)}</strong> pontos.
+                </p>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      {!finalizado ? (
-        <button
-          className="btn-finalizar"
-          onClick={finalizarQuiz}
-          disabled={!todasQuestoesRespondidas()}
-        >
-          Finalizar quiz
-        </button>
-      ) : (
-        <div className="resultado-card">
-          <h2>Resultado</h2>
-          <p>
-            Você fez <strong>{pontuacao}</strong> de{" "}
-            <strong>{calcularTotalPontos(quizSelecionado)}</strong> pontos.
-          </p>
         </div>
       )}
-    </div>
-  </div>
-)}
     </main>
   );
 }

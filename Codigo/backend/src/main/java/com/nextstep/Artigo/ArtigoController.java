@@ -2,15 +2,7 @@ package com.nextstep.Artigo;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/artigos")
@@ -33,18 +25,19 @@ public class ArtigoController {
         return service.listarTodos();
     }
 
-    @GetMapping("/aluno/{idAluno}")
-    public List<ArtigoResponseDTO> listarParaAluno(@PathVariable Long idAluno) {
-        return service.listarParaAluno(idAluno);
+    @GetMapping("/{id}")
+    public ArtigoResponseDTO buscarPorId(@PathVariable Long id) {
+        return service.buscarPorId(id);
     }
 
-    @GetMapping("/professor/{idProfessor}")
-    public List<ArtigoResponseDTO> listarParaProfessor(
-            @PathVariable Long idProfessor,
-            @RequestParam(required = false) Long turmaId,
-            @RequestParam(required = false) Long alunoId
-    ) {
-        return service.listarParaProfessor(idProfessor, turmaId, alunoId);
+    @GetMapping("/professor/{professorId}")
+    public List<ArtigoResponseDTO> listarPorProfessor(@PathVariable Long professorId) {
+        return service.listarPorProfessor(professorId);
+    }
+
+    @GetMapping("/turma/{turmaId}")
+    public List<ArtigoResponseDTO> listarPorTurma(@PathVariable Long turmaId) {
+        return service.listarPorTurma(turmaId);
     }
 
     @DeleteMapping("/{id}")

@@ -16,6 +16,9 @@ import QuizzesAluno from "./pages/QuizzesAluno/QuizzesAluno";
 import AlunoTurmaConteudo from "./pages/TurmaAluno/AlunoTurmaConteudo.jsx";
 import QuizzesAlunoGeral from "./pages/QuizzesAluno/QuizzesAlunoGeral.jsx";
 import RankingPage from "./pages/Ranking/RankingPage.jsx";
+import RankingTurma from "./pages/Ranking/RankingTurma.jsx";
+import ArticlesPage from "./pages/Articles/ArticlesPage.jsx";
+import ArticleDetailPage from "./pages/Articles/ArticleDetailPage.jsx";
 
 // Games
 import GamesPage      from "./pages/Games/GamesPage";
@@ -91,6 +94,7 @@ export default function App() {
           <Route path="/aluno/turmas/:idTurma" element={<AlunoTurmaConteudo />} />
           <Route path="/aluno/quizzes" element={<QuizzesAlunoGeral />} />
           <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/articles" element={<ArticlesPage />} />
 
           {/* GAMES */}
           <Route path="/games"              element={<GamesPage />} />
@@ -99,6 +103,10 @@ export default function App() {
           <Route path="/games/recycling"    element={<RecyclingGame />} />
           <Route path="/games/wordsearch"   element={<WordSearchGame />} />
           <Route path="/games/crossword"    element={<CrosswordGame />} />
+
+          {/* ARTICLES */}
+          <Route path="/articles" element={<ArticlesPage />} />
+          <Route path="/articles/:id" element={<ArticleDetailPage />} />
         </Routes>
         <ChatWidget />
       </AuthProvider>

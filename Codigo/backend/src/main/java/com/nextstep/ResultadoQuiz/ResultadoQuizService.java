@@ -12,11 +12,8 @@ import com.nextstep.Quiz.QuestaoRepository;
 import com.nextstep.Quiz.QuizRepository;
 import com.nextstep.ResultadoQuestao.ResultadoQuestao;
 import com.nextstep.ResultadoQuestao.ResultadoQuestaoDTO.RespostaQuestaoDTO;
-import com.nextstep.Turma.TurmaRepository;
-import com.nextstep.Quiz.Questao;
-import com.nextstep.Quiz.Alternativa;
-import com.nextstep.ResultadoQuestao.ResultadoQuestao;
 import com.nextstep.ResultadoQuestao.ResultadoQuestaoRepository;
+import com.nextstep.Turma.TurmaRepository;
 
 @Service
 public class ResultadoQuizService {
@@ -111,6 +108,7 @@ public class ResultadoQuizService {
 
         return resultadoSalvo;
     }
+    
     public List<ResultadoQuiz> listarPorTurma(Long idTurma) {
         return resultadoRepository.findByTurmaIdTurma(idTurma);
     }
@@ -121,5 +119,9 @@ public class ResultadoQuizService {
 
     public List<ResultadoQuiz> listarPorAluno(Long idAluno) {
         return resultadoRepository.findByAlunoId(idAluno);
+    }
+
+    public List<RankingTurmaDTO> buscarRankingPorTurma(Long idTurma) {
+        return resultadoRepository.buscarRankingPorTurma(idTurma);
     }
 }

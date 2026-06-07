@@ -58,4 +58,8 @@ public class PontuacaoService {
     public List<RankingDTO> buscarRankingPorJogo(String nomeJogo) {
         return pontuacaoRepository.buscarRankingPorJogo(nomeJogo);
     }
+
+    public List<RankingGlobalDTO> buscarRankingGlobal() {
+        return pontuacaoRepository.buscarRankingGlobal();
+    }
 }

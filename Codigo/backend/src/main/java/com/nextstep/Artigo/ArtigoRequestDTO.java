@@ -4,8 +4,7 @@ public class ArtigoRequestDTO {
 
     private String titulo;
     private String conteudo;
-    private String tipoAutor;
-    private Long autorId;
+    private Long professorId;
     private Long turmaId;
 
     public String getTitulo() {
@@ -24,20 +23,12 @@ public class ArtigoRequestDTO {
         this.conteudo = conteudo;
     }
 
-    public String getTipoAutor() {
-        return tipoAutor;
+    public Long getProfessorId() {
+        return professorId;
     }
 
-    public void setTipoAutor(String tipoAutor) {
-        this.tipoAutor = tipoAutor;
-    }
-
-    public Long getAutorId() {
-        return autorId;
-    }
-
-    public void setAutorId(Long autorId) {
-        this.autorId = autorId;
+    public void setProfessorId(Long professorId) {
+        this.professorId = professorId;
     }
 
     public Long getTurmaId() {
