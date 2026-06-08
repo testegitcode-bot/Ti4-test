@@ -23,14 +23,41 @@ async function request(path, options = {}) {
 }
 
 /* ── AUTH ────────────────────────────────────────────────────── */
-export const loginAuth = (body) =>
-  request('/auth/login', {
+
+// Returns the raw Response so callers can inspect status codes (e.g. 403).
+export async function loginAuth(body) {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const err = new Error(data?.message || data || `Error ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+export const registerAuth = (body) =>
+  request('/auth/register', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
-export const registerAuth = (body) =>
-  request('/auth/register', {
+export const verifyProfessor = (body) =>
+  request('/auth/verify-professor', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const resendVerificationCode = (body) =>
+  request('/auth/resend-code', {
     method: 'POST',
     body: JSON.stringify(body),
   });
