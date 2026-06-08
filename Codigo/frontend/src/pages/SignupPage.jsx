@@ -36,10 +36,6 @@ export default function SignupPage() {
         navigate('/');
       }
     } catch (err) {
-      if (err?.requiresVerification) {
-        navigate('/verify-professor');
-        return;
-      }
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('e-mail')) {
         setError('Could not create account.');

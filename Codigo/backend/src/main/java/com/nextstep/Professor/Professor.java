@@ -24,7 +24,7 @@ public class Professor {
     private String senha;
     private String telefone;
     private String bio;
-    private Boolean ativo = true;
+    private boolean ativo = true;
     private String codigoValidacao;
     private LocalDateTime dataExpiracaoCodigo;
 
@@ -55,16 +55,9 @@ public class Professor {
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
 
-    public Boolean isAtivo() {
-        if (this.codigoValidacao == null) {
-            return Boolean.TRUE;
-        }
-        return this.ativo == null ? Boolean.FALSE : this.ativo;
-    }
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-    
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+
     public String getCodigoValidacao() { return codigoValidacao; }
     public void setCodigoValidacao(String codigoValidacao) { this.codigoValidacao = codigoValidacao; }
 
