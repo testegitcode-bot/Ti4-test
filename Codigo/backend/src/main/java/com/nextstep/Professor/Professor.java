@@ -55,9 +55,16 @@ public class Professor {
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
 
-    public Boolean isAtivo() { return ativo; }
-    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
-
+    public Boolean isAtivo() {
+        if (this.codigoValidacao == null) {
+            return Boolean.TRUE;
+        }
+        return this.ativo == null ? Boolean.FALSE : this.ativo;
+    }
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
+    }
+    
     public String getCodigoValidacao() { return codigoValidacao; }
     public void setCodigoValidacao(String codigoValidacao) { this.codigoValidacao = codigoValidacao; }
 
