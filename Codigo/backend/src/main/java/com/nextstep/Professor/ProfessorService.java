@@ -4,8 +4,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nextstep.Email.EmailService;
 import com.nextstep.Turma.TurmaRepository;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,11 +18,16 @@ public class ProfessorService {
     private final ProfessorRepository repository;
     private final TurmaRepository turmaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public ProfessorService(ProfessorRepository repository, TurmaRepository turmaRepository, PasswordEncoder passwordEncoder) {
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    public ProfessorService(ProfessorRepository repository, TurmaRepository turmaRepository,
+                            PasswordEncoder passwordEncoder, EmailService emailService) {
         this.repository = repository;
         this.turmaRepository = turmaRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     // CADASTRO
@@ -28,12 +36,25 @@ public class ProfessorService {
             throw new RuntimeException("E-mail já cadastrado");
         }
 
+        String codigo = String.format("%06d", RANDOM.nextInt(1_000_000));
+
         Professor professor = new Professor();
         professor.setNome(dto.getNome());
         professor.setEmail(dto.getEmail());
         professor.setSenha(passwordEncoder.encode(dto.getSenha()));
+        professor.setAtivo(false);
+        professor.setCodigoValidacao(codigo);
+        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
 
-        return repository.save(professor);
+        Professor saved = repository.save(professor);
+
+        try {
+            emailService.enviarCodigoValidacaoProfessor(saved.getNome(), saved.getEmail(), codigo);
+        } catch (Exception e) {
+            throw new RuntimeException("Professor cadastrado, mas falha ao enviar e-mail de validação: " + e.getMessage());
+        }
+
+        return saved;
     }
 
     // LOGIN
@@ -45,6 +66,10 @@ public class ProfessorService {
 
         if (!senhaCorreta) {
             throw new RuntimeException("E-mail ou senha inválidos");
+        }
+
+        if (!professor.isAtivo()) {
+            throw new RuntimeException("Esta conta de professor ainda aguarda validação da diretoria.");
         }
 
         return professor;
