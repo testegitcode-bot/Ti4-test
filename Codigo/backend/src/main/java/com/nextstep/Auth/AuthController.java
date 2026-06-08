@@ -153,6 +153,37 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Conta validada com sucesso. O professor já pode fazer login."));
     }
 
+    // REENVIAR CODIGO
+    @PostMapping("/resend-code")
+    public ResponseEntity<?> resendCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        var professorOpt = professorRepository.findByEmail(email);
+
+        if (professorOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Professor não encontrado"));
+        }
+
+        Professor professor = professorOpt.get();
+        // Gera um novo código
+        String novoCodigo = String.format("%06d", RANDOM.nextInt(1_000_000));
+        
+        // Atualiza o banco
+        professor.setCodigoValidacao(novoCodigo);
+        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
+        professorRepository.save(professor);
+
+        // Reenvia o e-mail
+        try {
+            emailService.enviarCodigoValidacaoProfessor(professor.getNome(), professor.getEmail(), novoCodigo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("message", "Falha ao reenviar e-mail: " + e.getMessage())
+            );
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Novo código enviado com sucesso!"));
+    }
+
     // DTOs
     public record LoginRequest(
             String email,
