@@ -44,7 +44,7 @@ public class ProfessorService {
         professor.setSenha(passwordEncoder.encode(dto.getSenha()));
         professor.setAtivo(Boolean.FALSE);
         professor.setCodigoValidacao(codigo);
-        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
+        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusHours(24));
 
         Professor saved = repository.save(professor);
 

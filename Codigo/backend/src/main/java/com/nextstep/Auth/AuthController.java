@@ -103,7 +103,7 @@ public class AuthController {
             professor.setSenha(request.senha());
             professor.setAtivo(Boolean.FALSE);
             professor.setCodigoValidacao(codigo);
-            professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
+            professor.setDataExpiracaoCodigo(LocalDateTime.now().plusHours(24));
 
             Professor saved = professorRepository.save(professor);
 
@@ -185,7 +185,7 @@ public class AuthController {
         
         // Atualiza o banco
         professor.setCodigoValidacao(novoCodigo);
-        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
+        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusHours(24));
         professorRepository.save(professor);
 
         // Reenvia o e-mail
