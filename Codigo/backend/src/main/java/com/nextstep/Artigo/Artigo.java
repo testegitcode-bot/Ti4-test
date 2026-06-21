@@ -2,6 +2,7 @@ package com.nextstep.Artigo;
 
 import java.time.LocalDateTime;
 
+import com.nextstep.Aluno.Aluno;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Turma.Turma;
 
@@ -28,11 +29,19 @@ public class Artigo {
     @Column(columnDefinition = "TEXT")
     private String conteudo;
 
+    private String url;
+
+    private String tipoAutor;
+
     private LocalDateTime dataCriacao;
 
     @ManyToOne
     @JoinColumn(name = "id_professor")
     private Professor professor;
+
+    @ManyToOne
+    @JoinColumn(name = "id_aluno")
+    private Aluno aluno;
 
     @ManyToOne
     @JoinColumn(name = "id_turma")
@@ -67,6 +76,22 @@ public class Artigo {
         this.conteudo = conteudo;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getTipoAutor() {
+        return tipoAutor;
+    }
+
+    public void setTipoAutor(String tipoAutor) {
+        this.tipoAutor = tipoAutor;
+    }
+
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
@@ -81,6 +106,14 @@ public class Artigo {
 
     public void setProfessor(Professor professor) {
         this.professor = professor;
+    }
+
+    public Aluno getAluno() {
+        return aluno;
+    }
+
+    public void setAluno(Aluno aluno) {
+        this.aluno = aluno;
     }
 
     public Turma getTurma() {

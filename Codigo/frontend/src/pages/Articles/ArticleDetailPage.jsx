@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookOpenText,
   CalendarDays,
   GraduationCap,
   Send,
-  Star,
   UserRound,
 } from "lucide-react";
 import ReactQuill from "react-quill";
@@ -17,9 +16,9 @@ import { useAuth } from "@/contexts/AuthContext.jsx";
 import {
   createArticleAnswer,
   getArticle,
+  gradeArticleAnswer,
   listAnswersByArticle,
   listAnswersByStudent,
-  resendArticleAnswer,
 } from "@/services/api";
 
 export default function ArticleDetailPage() {
@@ -35,10 +34,7 @@ export default function ArticleDetailPage() {
   const [answers, setAnswers] = useState([]);
   const [studentAnswers, setStudentAnswers] = useState([]);
   const [conteudoResposta, setConteudoResposta] = useState("");
-  const [activeTab, setActiveTab] = useState("CONTENT");
-  const [selectedReview, setSelectedReview] = useState(null);
-  const [editingAnswer, setEditingAnswer] = useState(null);
-  const [conteudoReenvio, setConteudoReenvio] = useState("");
+  const [notas, setNotas] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -54,18 +50,6 @@ export default function ArticleDetailPage() {
     ],
   };
 
-  const approvedReviews = useMemo(() => {
-    return answers
-      .filter((answer) => answer.status === "APROVADA")
-      .sort((a, b) => {
-        if (a.destaque === b.destaque) {
-          return new Date(b.dataResposta) - new Date(a.dataResposta);
-        }
-
-        return a.destaque ? -1 : 1;
-      });
-  }, [answers]);
-
   useEffect(() => {
     carregarDados();
   }, [id, user?.id, user?.role]);
@@ -79,6 +63,12 @@ export default function ArticleDetailPage() {
 
       const respostasArtigo = await listAnswersByArticle(id).catch(() => []);
       setAnswers(respostasArtigo || []);
+
+      const notasIniciais = {};
+      (respostasArtigo || []).forEach((answer) => {
+        notasIniciais[answer.id] = answer.nota ?? "";
+      });
+      setNotas(notasIniciais);
 
       if (isStudent && alunoId) {
         const respostasAluno = await listAnswersByStudent(alunoId).catch(() => []);
@@ -119,7 +109,7 @@ export default function ArticleDetailPage() {
       });
 
       setConteudoResposta("");
-      toast.success("Resposta enviada! Ela ficará pendente até aprovação do professor.");
+      toast.success("Resposta enviada com sucesso.");
       await carregarDados();
     } catch (err) {
       toast.error(`Erro ao enviar resposta: ${err.message}`);
@@ -128,30 +118,26 @@ export default function ArticleDetailPage() {
     }
   }
 
-  async function enviarReenvio() {
-  if (!editingAnswer) return;
+  async function salvarNota(answerId) {
+    const nota = Number(notas[answerId]);
 
-  if (!conteudoReenvio || conteudoReenvio === "<p><br></p>") {
-    toast.error("Escreva sua resposta antes de reenviar.");
-    return;
+    if (Number.isNaN(nota) || nota < 0 || nota > 100) {
+      toast.error("A nota deve estar entre 0 e 100.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      await gradeArticleAnswer(answerId, nota);
+      toast.success("Nota salva com sucesso.");
+      await carregarDados();
+    } catch (err) {
+      toast.error(`Erro ao salvar nota: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
   }
-
-  setSaving(true);
-
-  try {
-    await resendArticleAnswer(editingAnswer.id, conteudoReenvio);
-
-    toast.success("Resposta reenviada para avaliação.");
-    setEditingAnswer(null);
-    setConteudoReenvio("");
-
-    await carregarDados();
-  } catch (err) {
-    toast.error(`Erro ao reenviar resposta: ${err.message}`);
-  } finally {
-    setSaving(false);
-  }
-}
 
   function formatDate(value) {
     if (!value) return "Sem data";
@@ -216,266 +202,148 @@ export default function ArticleDetailPage() {
           Voltar para artigos
         </button>
 
-        <div className="mb-6 flex overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-white shadow-sm">
-          <button
-            onClick={() => setActiveTab("CONTENT")}
-            className={`flex-1 py-4 text-sm font-black transition ${
-              activeTab === "CONTENT"
-                ? "bg-[hsl(var(--primary))] text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Article Content
-          </button>
+        <div className="mb-8 flex flex-wrap gap-2 text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#5B3DF5]/30 bg-[#5B3DF5]/10 px-3 py-1 text-[#5B3DF5]">
+            <UserRound size={13} />
+            {article.nomeProfessor || article.nomeAluno || "Autor não informado"}
+          </span>
 
-          <button
-            onClick={() => setActiveTab("REVIEWS")}
-            className={`flex-1 py-4 text-sm font-black transition ${
-              activeTab === "REVIEWS"
-                ? "bg-[hsl(var(--primary))] text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Student Reviews
-          </button>
+          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-gray-600">
+            <CalendarDays size={13} />
+            {formatDate(article.dataCriacao)}
+          </span>
+
+          {article.nomeTurma && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--secondary))]/10 px-3 py-1 text-[hsl(var(--secondary))]">
+              <GraduationCap size={13} />
+              {article.nomeTurma}
+            </span>
+          )}
         </div>
 
-        {activeTab === "CONTENT" && (
-          <>
-            <article className="rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-8 shadow-sm">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))]/10 px-3 py-1 text-xs font-black text-[hsl(var(--primary))]">
-                <BookOpenText size={14} />
-                Artigo do professor
-              </div>
+        {article.url && (
+          <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+            <p className="mb-2 text-sm font-black text-blue-700">
+              Artigo externo
+            </p>
 
-              <h1 className="mb-4 text-4xl font-black leading-tight text-[hsl(var(--secondary))]">
-                {article.titulo}
-              </h1>
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-700"
+            >
+              Acessar artigo original
+            </a>
+          </div>
+        )}
 
-              <div className="mb-8 flex flex-wrap gap-2 text-xs font-bold">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#5B3DF5]/30 bg-[#5B3DF5]/10 px-3 py-1 text-[#5B3DF5]">
-                  <UserRound size={13} />
-                  {article.nomeProfessor || "Professor não informado"}
-                </span>
+        <div
+          className="prose max-w-none"
+          dangerouslySetInnerHTML={{
+            __html: article.conteudo,
+          }}
+        />
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-gray-600">
-                  <CalendarDays size={13} />
-                  {formatDate(article.dataCriacao)}
-                </span>
-
-                {article.nomeTurma && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--secondary))]/10 px-3 py-1 text-[hsl(var(--secondary))]">
-                    <GraduationCap size={13} />
-                    {article.nomeTurma}
-                  </span>
-                )}
-              </div>
-
-              <div
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{
-                  __html: article.conteudo,
-                }}
-              />
-            </article>
-
-            {isStudent && (
-              <section className="mt-8 rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-6 shadow-sm">
-                {studentAnswers.length === 0 && (
-            <>  
+        {isStudent && (
+          <section className="mt-8 rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-6 shadow-sm">
+            {studentAnswers.length === 0 ? (
+              <>
                 <h2 className="mb-2 text-2xl font-black text-[hsl(var(--secondary))]">
                   Responder artigo
                 </h2>
 
                 <p className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
-                  Sua resposta será enviada para análise do professor. Se aprovada,
-                  poderá aparecer em Student Reviews.
+                  Sua resposta será avaliada pelo professor com nota de 0 a 100.
                 </p>
 
-                <form onSubmit={enviarResposta}>
-                  <div className="rounded-2xl border-2 border-[hsl(var(--border))] bg-white p-2">
-                    <ReactQuill
-                      theme="snow"
-                      value={conteudoResposta}
-                      onChange={setConteudoResposta}
-                      modules={modules}
-                      placeholder="Escreva sua resposta aqui..."
-                      style={{
-                        height: "260px",
-                        marginBottom: "55px",
-                      }}
-                    />
-                  </div>
+                <form onSubmit={enviarResposta} className="space-y-5">
+                <div className="overflow-hidden rounded-2xl border-2 border-[hsl(var(--border))] bg-white">
+                  <ReactQuill
+                    theme="snow"
+                    value={conteudoResposta}
+                    onChange={setConteudoResposta}
+                    modules={modules}
+                    placeholder="Escreva sua resposta aqui..."
+                    className="
+                      border-none
+                      [&_.ql-toolbar]:flex
+                      [&_.ql-toolbar]:flex-wrap
+                      [&_.ql-toolbar]:gap-1
+                      [&_.ql-toolbar]:border-0
+                      [&_.ql-toolbar]:border-b
+                      [&_.ql-toolbar]:border-[hsl(var(--border))]
+                      [&_.ql-container]:min-h-[260px]
+                      [&_.ql-container]:border-0
+                      [&_.ql-editor]:min-h-[260px]
+                      [&_.ql-editor]:text-[15px]
+                      max-sm:[&_.ql-container]:min-h-[220px]
+                      max-sm:[&_.ql-editor]:min-h-[220px]
+                    "
+                  />
+                </div>
 
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="flex items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-5 py-3 font-black text-white hover:bg-[hsl(var(--primary-dark))] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <Send size={18} />
-                      {saving ? "Enviando..." : "Enviar resposta"}
-                    </button>
-                  </div>
-                </form>
-                </>
-    )}
-
-                {studentAnswers.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="mb-4 text-xl font-black text-[hsl(var(--secondary))]">
-                      Suas respostas
-                    </h3>
-
-                    <div className="grid gap-4">
-                      {studentAnswers.map((answer) => (
-                        <div
-                          key={answer.id}
-                          className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
-                        >
-                          <div className="mb-3 text-xs font-bold text-gray-500">
-                            Status: {answer.status}
-                          </div>
-
-                          <div
-                            className="mb-4 text-sm leading-7 text-gray-700"
-                            dangerouslySetInnerHTML={{
-                              __html: answer.conteudo,
-                            }}
-                          />
-
-                          {answer.status === "REPROVADA" && answer.feedbackProfessor && (
-  <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-    <p className="mb-1 text-sm font-black text-red-700">
-      Feedback do professor
-    </p>
-
-    <p className="mb-3 text-sm text-red-700">
-      {answer.feedbackProfessor}
-    </p>
-
-    {answer.prazoReenvio && (
-      <p className="text-xs font-bold text-red-600">
-        Prazo para reenviar: {formatDate(answer.prazoReenvio)}
-      </p>
-    )}
-
-    {answer.prazoReenvio &&
-    new Date() <= new Date(answer.prazoReenvio) ? (
-      <button
-  type="button"
-  onClick={() => {
-    setEditingAnswer(answer);
-    setConteudoReenvio(answer.conteudo);
-  }}
-  className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-700"
->
-  Editar e reenviar
-</button>
-    ) : (
-      <p className="mt-3 text-xs font-black text-red-700">
-        Prazo de reenvio encerrado.
-      </p>
-    )}
-  </div>
-)}
-
-                          {answer.status === "PENDENTE" && (
-                            <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-                              <p className="text-sm font-black text-yellow-700">
-                                Aguardando avaliação do professor.
-                              </p>
-                            </div>
-                          )}
-
-                          {answer.status === "APROVADA" && (
-                            <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
-                              <p className="text-sm font-black text-green-700">
-                                Sua resposta foi aprovada.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
-          </>
-        )}
-
-        {activeTab === "REVIEWS" && (
-          <section className="rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-black text-[hsl(var(--secondary))]">
-                  Student Reviews
-                </h2>
-
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Respostas aprovadas pelos professores. As respostas em destaque aparecem primeiro.
-                </p>
-              </div>
-            </div>
-
-            {approvedReviews.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-[hsl(var(--border))] px-6 py-12 text-center">
-                <Star
-                  size={34}
-                  className="mx-auto mb-3 text-[hsl(var(--muted-foreground))]"
-                />
-
-                <p className="font-semibold text-[hsl(var(--muted-foreground))]">
-                  Nenhuma resposta aprovada ainda.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {approvedReviews.map((answer) => (
-                  <div
-                    key={answer.id}
-                    onClick={() => setSelectedReview(answer)}
-                    className={`cursor-pointer rounded-2xl p-5 shadow-sm transition hover:scale-[1.01] hover:shadow-lg ${
-                      answer.destaque
-                        ? "border-2 border-yellow-300 bg-yellow-50"
-                        : "border border-gray-100 bg-gray-50"
-                    }`}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-5 py-3 font-black text-white hover:bg-[hsl(var(--primary-dark))] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
-                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500">
-                      {answer.destaque && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-200 px-2.5 py-1 text-yellow-800">
-                          <Star size={13} />
-                          Destaque
-                        </span>
-                      )}
+                    <Send size={18} />
+                    {saving ? "Enviando..." : "Enviar resposta"}
+                  </button>
+                </div>
+              </form>
+              </>
+            ) : (
+              <div>
+                <h3 className="mb-4 text-xl font-black text-[hsl(var(--secondary))]">
+                  Sua resposta
+                </h3>
 
-                      <span>{answer.nomeAluno || "Aluno não informado"}</span>
-                      <span>•</span>
-                      <span>{formatDate(answer.dataResposta)}</span>
-                    </div>
-
+                <div className="grid gap-4">
+                  {studentAnswers.map((answer) => (
                     <div
-                      className="line-clamp-3 text-sm leading-7 text-gray-700"
-                      dangerouslySetInnerHTML={{
-                        __html: answer.conteudo,
-                      }}
-                    />
+                      key={answer.id}
+                      className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+                    >
+                      <div className="mb-3 text-xs font-bold text-gray-500">
+                        Enviada em: {formatDate(answer.dataResposta)}
+                      </div>
 
-                    <p className="mt-3 text-xs font-bold text-[hsl(var(--primary))]">
-                      Clique para ler a resposta completa →
-                    </p>
-                  </div>
-                ))}
+                      <div
+                        className="mb-4 text-sm leading-7 text-gray-700"
+                        dangerouslySetInnerHTML={{
+                          __html: answer.conteudo,
+                        }}
+                      />
+
+                      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <p className="text-sm font-black text-blue-700">
+                          Nota:{" "}
+                          {answer.nota !== null && answer.nota !== undefined
+                            ? `${answer.nota}/100`
+                            : "ainda não avaliada"}
+                        </p>
+
+                        {answer.dataAvaliacao && (
+                          <p className="mt-1 text-xs font-bold text-blue-600">
+                            Avaliada em: {formatDate(answer.dataAvaliacao)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>
         )}
 
-        {isTeacher && activeTab === "CONTENT" && (
+        {isTeacher && (
           <section className="mt-8 rounded-3xl border-2 border-[hsl(var(--border))] bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-2xl font-black text-[hsl(var(--secondary))]">
-              Respostas deste artigo
+              Respostas dos alunos
             </h2>
 
             {answers.length === 0 ? (
@@ -493,22 +361,55 @@ export default function ArticleDetailPage() {
                       <span>{answer.nomeAluno || "Aluno não informado"}</span>
                       <span>•</span>
                       <span>{formatDate(answer.dataResposta)}</span>
-                      <span>•</span>
-                      <span>Status: {answer.status}</span>
-                      {answer.destaque && (
-                        <>
-                          <span>•</span>
-                          <span className="text-yellow-600">Destaque</span>
-                        </>
-                      )}
                     </div>
 
                     <div
-                      className="text-sm leading-7 text-gray-700"
+                      className="mb-4 text-sm leading-7 text-gray-700"
                       dangerouslySetInnerHTML={{
                         __html: answer.conteudo,
                       }}
                     />
+
+                    <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-black text-[hsl(var(--secondary))]">
+                          Avaliação
+                        </p>
+
+                        <p className="text-xs font-semibold text-gray-500">
+                          Nota atual:{" "}
+                          {answer.nota !== null && answer.nota !== undefined
+                            ? `${answer.nota}/100`
+                            : "não avaliada"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={notas[answer.id] ?? ""}
+                          onChange={(e) =>
+                            setNotas((prev) => ({
+                              ...prev,
+                              [answer.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="0 a 100"
+                          className="w-28 rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold outline-none focus:border-[hsl(var(--primary))]"
+                        />
+
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => salvarNota(answer.id)}
+                          className="rounded-xl bg-[hsl(var(--primary))] px-4 py-2 text-sm font-black text-white hover:bg-[hsl(var(--primary-dark))] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Salvar nota
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -516,107 +417,6 @@ export default function ArticleDetailPage() {
           </section>
         )}
       </main>
-
-       {selectedReview && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-    onClick={() => setSelectedReview(null)}
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-8 shadow-2xl"
-    >
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-[hsl(var(--secondary))]">
-            Resposta de {selectedReview.nomeAluno || "Aluno"}
-          </h2>
-
-          <p className="text-sm font-semibold text-gray-500">
-            {formatDate(selectedReview.dataResposta)}
-          </p>
-        </div>
-
-        <button
-          onClick={() => setSelectedReview(null)}
-          className="rounded-full px-3 py-1 text-2xl font-black text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-        >
-          ×
-        </button>
-      </div>
-
-      {selectedReview.destaque && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-700">
-          <Star size={16} />
-          Resposta em destaque
-        </div>
-      )}
-
-      <div
-        className="prose max-w-none"
-        dangerouslySetInnerHTML={{
-          __html: selectedReview.conteudo,
-        }}
-      />
-    </div>
-  </div>
-)}
-
-{editingAnswer && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-    onClick={() => setEditingAnswer(null)}
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-8 shadow-2xl"
-    >
-      <h2 className="mb-2 text-2xl font-black text-[hsl(var(--secondary))]">
-        Editar e reenviar resposta
-      </h2>
-
-      <p className="mb-4 text-sm text-gray-500">
-        Faça as correções solicitadas pelo professor e reenvie para nova avaliação.
-      </p>
-
-      <div className="rounded-2xl border-2 border-[hsl(var(--border))] bg-white p-2">
-        <ReactQuill
-          theme="snow"
-          value={conteudoReenvio}
-          onChange={setConteudoReenvio}
-          modules={modules}
-          placeholder="Edite sua resposta aqui..."
-          style={{
-            height: "300px",
-            marginBottom: "60px",
-          }}
-        />
-      </div>
-
-      <div className="mt-5 flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setEditingAnswer(null);
-            setConteudoReenvio("");
-          }}
-          className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          disabled={saving}
-          onClick={enviarReenvio}
-          className="rounded-xl bg-[hsl(var(--primary))] px-5 py-2.5 text-sm font-black text-white hover:bg-[hsl(var(--primary-dark))] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? "Reenviando..." : "Reenviar resposta"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
       <Footer />
     </div>

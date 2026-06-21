@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -10,6 +10,7 @@ import GerenciarTurma from "./pages/Turmas/GerenciarTurma";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ProfessorDashboard from "./pages/Professor/ProfessorDashboard";
+import ProfessorVerificationPage from "./pages/Professor/ProfessorVerificationPage";
 import QuizzesPage from "./pages/Quiz/QuizzesPage";
 import AlunoDashboard from './pages/Aluno/AlunoDashboard.jsx';
 import QuizzesAluno from "./pages/QuizzesAluno/QuizzesAluno";
@@ -27,6 +28,35 @@ import FishingGame    from "./pages/Games/FishingGame";
 import RecyclingGame  from "./pages/Games/RecyclingGame";
 import WordSearchGame from "./pages/Games/WordSearchGame";
 import CrosswordGame  from "./pages/Games/CrosswordGame";
+
+function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+function PendingVerificationGuard() {
+  const { pendingProfessorEmail } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (
+      pendingProfessorEmail &&
+      location.pathname !== "/verify-professor" &&
+      location.pathname !== "/login"
+    ) {
+      navigate("/verify-professor", { replace: true });
+    }
+  }, [pendingProfessorEmail, location.pathname, navigate]);
+
+  return null;
+}
 
 function ChatWidget() {
   const { user } = useAuth();
@@ -74,6 +104,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PendingVerificationGuard />
         <Header />
         <Toaster
           position="top-right"
@@ -88,6 +119,7 @@ export default function App() {
           <Route path="/login"               element={<LoginPage />} />
           <Route path="/signup"              element={<SignupPage />} />
           <Route path="/professor/dashboard" element={<ProfessorDashboard />} />
+          <Route path="/verify-professor"    element={<ProfessorVerificationPage />} />
           <Route path="/quizzes"             element={<QuizzesPage />} />
           <Route path="/quizzesAluno"        element={<QuizzesAluno />} />
           <Route path="/dashboard-aluno"     element={<AlunoDashboard />} />
@@ -96,13 +128,13 @@ export default function App() {
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
 
-          {/* GAMES */}
-          <Route path="/games"              element={<GamesPage />} />
-          <Route path="/games/typing"       element={<TypingGame />} />
-          <Route path="/games/fishing"      element={<FishingGame />} />
-          <Route path="/games/recycling"    element={<RecyclingGame />} />
-          <Route path="/games/wordsearch"   element={<WordSearchGame />} />
-          <Route path="/games/crossword"    element={<CrosswordGame />} />
+          {/* GAMES — requer login */}
+          <Route path="/games"              element={<PrivateRoute><GamesPage /></PrivateRoute>} />
+          <Route path="/games/typing"       element={<PrivateRoute><TypingGame /></PrivateRoute>} />
+          <Route path="/games/fishing"      element={<PrivateRoute><FishingGame /></PrivateRoute>} />
+          <Route path="/games/recycling"    element={<PrivateRoute><RecyclingGame /></PrivateRoute>} />
+          <Route path="/games/wordsearch"   element={<PrivateRoute><WordSearchGame /></PrivateRoute>} />
+          <Route path="/games/crossword"    element={<PrivateRoute><CrosswordGame /></PrivateRoute>} />
 
           {/* ARTICLES */}
           <Route path="/articles" element={<ArticlesPage />} />

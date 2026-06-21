@@ -8,9 +8,6 @@ import {
   Trash2,
   UserRound,
   X,
-  Check,
-  Ban,
-  Star,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +20,8 @@ import {
   deleteArticle,
   listArticles,
   listArticlesByClass,
-  listPendingArticleAnswers,
   listTurmasByProfessor,
   listTurmasByStudent,
-  approveArticleAnswer,
-  rejectArticleAnswer,
 } from "@/services/api";
 
 export default function ArticlesPage() {
@@ -38,17 +32,12 @@ export default function ArticlesPage() {
   const isStudent = user?.role === "student" || user?.role === "ALUNO";
 
   const [articles, setArticles] = useState([]);
-  const [pendingAnswers, setPendingAnswers] = useState([]);
   const [turmas, setTurmas] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedTurma, setSelectedTurma] = useState("");
   const [filterMode, setFilterMode] = useState("ESCOLA");
-
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [answerToReject, setAnswerToReject] = useState(null);
-  const [feedbackText, setFeedbackText] = useState("");
 
   const [showForm, setShowForm] = useState(false);
 
@@ -65,33 +54,29 @@ export default function ArticlesPage() {
 
     try {
       if (isTeacher && user?.id) {
-        const [turmasProfessor, todosArtigos, respostasPendentes] =
-          await Promise.all([
-            listTurmasByProfessor(user.id).catch(() => []),
-            listArticles(),
-            listPendingArticleAnswers().catch(() => []),
-          ]);
+        const [turmasProfessor, todosArtigos] = await Promise.all([
+          listTurmasByProfessor(user.id).catch(() => []),
+          listArticles(),
+        ]);
 
         setTurmas(turmasProfessor || []);
         setArticles(todosArtigos || []);
-        setPendingAnswers(respostasPendentes || []);
         return;
       }
 
       if (isStudent && user?.id) {
         const [turmasAluno, todosArtigos] = await Promise.all([
-  listTurmasByStudent(user.id).catch(() => []),
-  listArticles(),
-]);
+          listTurmasByStudent(user.id).catch(() => []),
+          listArticles(),
+        ]);
 
-setTurmas(turmasAluno || []);
-setArticles(todosArtigos || []);
+        setTurmas(turmasAluno || []);
+        setArticles(todosArtigos || []);
         return;
       }
 
       const todos = await listArticles();
       setArticles(todos || []);
-      await carregarReviewCounts(todos || []);
     } catch (err) {
       toast.error(`Erro ao carregar artigos: ${err.message}`);
     } finally {
@@ -99,38 +84,38 @@ setArticles(todosArtigos || []);
     }
   }
 
-async function carregarArtigosPorFiltro() {
-  if (!user) return;
+  async function carregarArtigosPorFiltro() {
+    if (!user) return;
 
-  try {
-    if (isStudent && filterMode === "MINHA_TURMA") {
-      if (!selectedTurma) {
-        setArticles([]);
+    try {
+      if (isStudent && filterMode === "MINHA_TURMA") {
+        if (!selectedTurma) {
+          setArticles([]);
+          return;
+        }
+
+        const data = await listArticlesByClass(selectedTurma);
+        setArticles(data || []);
         return;
       }
 
-      const data = await listArticlesByClass(selectedTurma);
-      setArticles(data || []);
-      return;
-    }
+      if (isStudent && filterMode === "ESCOLA") {
+        const data = await listArticles();
+        setArticles(data || []);
+        return;
+      }
 
-    if (isStudent && filterMode === "ESCOLA") {
-      const data = await listArticles();
-      setArticles(data || []);
-      return;
-    }
+      if (isTeacher) {
+        const data = selectedTurma
+          ? await listArticlesByClass(selectedTurma)
+          : await listArticles();
 
-    if (isTeacher) {
-      const data = selectedTurma
-        ? await listArticlesByClass(selectedTurma)
-        : await listArticles();
-
-      setArticles(data || []);
+        setArticles(data || []);
+      }
+    } catch (err) {
+      toast.error(`Erro ao filtrar artigos: ${err.message}`);
     }
-  } catch (err) {
-    toast.error(`Erro ao filtrar artigos: ${err.message}`);
   }
-}
 
   function handleArticleSaved(newArticle) {
     setArticles((prev) => [newArticle, ...prev]);
@@ -153,86 +138,32 @@ async function carregarArtigosPorFiltro() {
     }
   }
 
-async function handleApprove(answerId, destaque = false) {
-  try {
-    await approveArticleAnswer(answerId, destaque);
+  const filteredArticles = useMemo(() => {
+    const term = search.toLowerCase().trim();
 
-    setPendingAnswers((prev) =>
-      prev.filter((r) => r.id !== answerId)
-    );
+    if (isStudent && filterMode === "MINHA_TURMA" && !selectedTurma) {
+      return [];
+    }
 
-    toast.success(
-      destaque
-        ? "Resposta aprovada como destaque!"
-        : "Resposta aprovada!"
-    );
+    let result = articles;
 
-  } catch (err) {
-    toast.error(`Erro ao aprovar resposta: ${err.message}`);
-  }
-}
+    if (isStudent && filterMode === "MINHA_TURMA" && selectedTurma) {
+      result = result.filter(
+        (article) => Number(article.turmaId) === Number(selectedTurma)
+      );
+    }
 
-  function handleReject(answerId) {
-  setAnswerToReject(answerId);
-  setFeedbackText("");
-  setRejectModalOpen(true);
-}
+    if (!term) return result;
 
-async function confirmReject() {
-  if (!feedbackText.trim()) {
-    toast.error("Informe um feedback para reprovar a resposta.");
-    return;
-  }
-
-  try {
-    await rejectArticleAnswer(
-      answerToReject,
-      feedbackText.trim()
-    );
-
-    setPendingAnswers((prev) =>
-      prev.filter((r) => r.id !== answerToReject)
-    );
-
-    toast.success("Resposta reprovada com feedback.");
-
-    setRejectModalOpen(false);
-    setAnswerToReject(null);
-    setFeedbackText("");
-
-  } catch (err) {
-    toast.error(`Erro ao reprovar resposta: ${err.message}`);
-  }
-}
-
-const filteredArticles = useMemo(() => {
-  const term = search.toLowerCase().trim();
-
-
-  if (isStudent && filterMode === "MINHA_TURMA" && !selectedTurma) {
-    return [];
-  }
-
-  let result = articles;
-
-  if (isStudent && filterMode === "MINHA_TURMA" && selectedTurma) {
-    result = result.filter(
-      (article) => Number(article.turmaId) === Number(selectedTurma)
-    );
-  }
-
-  if (!term) return result;
-
-  return result.filter((article) => {
-    return (
-      article.titulo?.toLowerCase().includes(term) ||
-      article.conteudo?.toLowerCase().includes(term) ||
-      article.nomeProfessor?.toLowerCase().includes(term) ||
-      article.nomeTurma?.toLowerCase().includes(term)
-    );
-  });
-}, [articles, search, filterMode, selectedTurma, isStudent]);
-
+    return result.filter((article) => {
+      return (
+        article.titulo?.toLowerCase().includes(term) ||
+        article.conteudo?.toLowerCase().includes(term) ||
+        article.nomeProfessor?.toLowerCase().includes(term) ||
+        article.nomeTurma?.toLowerCase().includes(term)
+      );
+    });
+  }, [articles, search, filterMode, selectedTurma, isStudent]);
 
   function formatDate(value) {
     if (!value) return "Sem data";
@@ -261,7 +192,7 @@ const filteredArticles = useMemo(() => {
             </h1>
 
             <p className="text-[hsl(var(--muted-foreground))]">
-              Leia artigos dos professores e acompanhe respostas em destaque.
+              Leia artigos dos professores e responda às atividades propostas.
             </p>
           </div>
 
@@ -330,77 +261,17 @@ const filteredArticles = useMemo(() => {
           </div>
         </section>
 
-        {isTeacher && pendingAnswers.length > 0 && (
-          <section className="mb-10 rounded-2xl border border-yellow-100 bg-yellow-50 p-5">
-            <h2 className="mb-4 text-xl font-black text-[hsl(var(--secondary))]">
-              Respostas pendentes
-            </h2>
-
-            <div className="grid gap-4">
-              {pendingAnswers.map((answer) => (
-                <div
-                  key={answer.id}
-                  className="rounded-2xl border border-yellow-100 bg-white p-4 shadow-sm"
-                >
-                  <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500">
-                    <span>Aluno: {answer.nomeAluno || "Não informado"}</span>
-                    <span>•</span>
-                    <span>Artigo: {answer.tituloArtigo}</span>
-                    <span>•</span>
-                    <span>{formatDate(answer.dataResposta)}</span>
-                  </div>
-
-                  <div
-                    className="mb-4 text-sm text-gray-700"
-                    dangerouslySetInnerHTML={{
-                    __html: answer.conteudo,
-                    }}
-                  />
-
-                   <div className="flex flex-wrap gap-2">
-
-                <button
-                  onClick={() => handleApprove(answer.id, false)}
-                  className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700"
-                  >
-                  <Check size={16} />
-                  Aprovar
-                </button>
-
-                <button
-                  onClick={() => handleApprove(answer.id, true)}
-                  className="flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-600"
-                  >
-                  <Star size={16} />
-                  Aprovar como Destaque
-                </button>
-
-                <button
-                  onClick={() => handleReject(answer.id)}
-                  className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
-                  >
-                  <Ban size={16} />
-                  Reprovar
-                </button>
-
-              </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {loading && (
           <div className="flex items-center justify-center py-24">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-[hsl(var(--primary))] border-t-transparent" />
           </div>
         )}
 
-{!loading && filteredArticles.length === 0 && (
-  <EmptyState text="Nenhum artigo encontrado." />
-)}
+        {!loading && filteredArticles.length === 0 && (
+          <EmptyState text="Nenhum artigo encontrado." />
+        )}
 
-{!loading && filteredArticles.length > 0 && (
+        {!loading && filteredArticles.length > 0 && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {filteredArticles.map((article) => (
               <ArticleCard
@@ -418,56 +289,14 @@ const filteredArticles = useMemo(() => {
 
       <Footer />
 
-{showForm && (
-  <NovoArtigoModal
-    user={user}
-    turmas={turmas}
-    onClose={() => setShowForm(false)}
-    onSaved={handleArticleSaved}
-  />
-)}
-
-{rejectModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-    <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
-      <h2 className="mb-2 text-2xl font-black text-[hsl(var(--secondary))]">
-        Reprovar resposta
-      </h2>
-
-      <p className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
-        Escreva um feedback para o aluno.
-      </p>
-
-      <textarea
-        value={feedbackText}
-        onChange={(e) => setFeedbackText(e.target.value)}
-        rows={5}
-        placeholder="Ex: Revise melhor o uso do Simple Past..."
-        className="w-full resize-none rounded-2xl border-2 border-[hsl(var(--border))] px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))]"
-      />
-
-      <div className="mt-5 flex justify-end gap-3">
-        <button
-          onClick={() => {
-            setRejectModalOpen(false);
-            setAnswerToReject(null);
-            setFeedbackText("");
-          }}
-          className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold"
-        >
-          Cancelar
-        </button>
-
-        <button
-          onClick={confirmReject}
-          className="rounded-xl bg-red-600 px-5 py-2 text-sm font-black text-white hover:bg-red-700"
-        >
-          Reprovar
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {showForm && (
+        <NovoArtigoModal
+          user={user}
+          turmas={turmas}
+          onClose={() => setShowForm(false)}
+          onSaved={handleArticleSaved}
+        />
+      )}
     </div>
   );
 }
@@ -505,7 +334,7 @@ function ArticleCard({ article, isTeacher, formatDate, onClick, onDelete }) {
         <div
           className="line-clamp-3 text-sm font-medium leading-relaxed text-[hsl(var(--foreground))]/70"
           dangerouslySetInnerHTML={{
-          __html: article.conteudo,
+            __html: article.conteudo,
           }}
         />
 
@@ -515,23 +344,22 @@ function ArticleCard({ article, isTeacher, formatDate, onClick, onDelete }) {
       </div>
 
       {isTeacher && (
-  <div className="flex items-center justify-end rounded-b-2xl border-t border-[hsl(var(--border))] bg-gray-50/50 px-6 py-2.5">
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onDelete();
-      }}
-      className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-red-500 transition-colors hover:bg-red-50"
-    >
-      <Trash2 size={14} />
-      Excluir
-    </button>
-  </div>
-)}
+        <div className="flex items-center justify-end rounded-b-2xl border-t border-[hsl(var(--border))] bg-gray-50/50 px-6 py-2.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-red-500 transition-colors hover:bg-red-50"
+          >
+            <Trash2 size={14} />
+            Excluir
+          </button>
+        </div>
+      )}
     </div>
   );
 }
-
 
 function EmptyState({ text }) {
   return (
@@ -540,6 +368,7 @@ function EmptyState({ text }) {
         size={40}
         className="mx-auto mb-4 text-[hsl(var(--muted-foreground))]"
       />
+
       <p className="font-semibold text-[hsl(var(--muted-foreground))]">
         {text}
       </p>
@@ -552,18 +381,20 @@ function NovoArtigoModal({ user, turmas, onClose, onSaved }) {
   const [conteudo, setConteudo] = useState("");
   const [turmaId, setTurmaId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [url, setUrl] = useState("");
+
 
   const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline"],
-    [{ size: ["small", false, "large", "huge"] }],
-    [{ list: "ordered" }, { list: "bullet" }],
-    [{ align: [] }],
-    ["link"],
-    ["clean"],
-  ],
-};
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline"],
+      [{ size: ["small", false, "large", "huge"] }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      [{ align: [] }],
+      ["link"],
+      ["clean"],
+    ],
+  };
 
   async function handleSalvar(e) {
     e.preventDefault();
@@ -573,8 +404,13 @@ function NovoArtigoModal({ user, turmas, onClose, onSaved }) {
       return;
     }
 
-    if (!titulo.trim() || !conteudo.trim()) {
-      toast.error("Preencha título e conteúdo.");
+    if (!titulo.trim()) {
+      toast.error("Preencha o título.");
+      return;
+    }
+
+    if (!conteudo.trim() && !url.trim()) {
+      toast.error("Preencha o conteúdo ou informe uma URL.");
       return;
     }
 
@@ -582,11 +418,12 @@ function NovoArtigoModal({ user, turmas, onClose, onSaved }) {
 
     try {
       const saved = await createArticle({
-  titulo: titulo.trim(),
-  conteudo: conteudo.trim(),
-  professorId: user.id || user.professorId,
-  turmaId: turmaId || null,
-});
+        titulo: titulo.trim(),
+        conteudo: conteudo.trim(),
+        url: url.trim() || null,
+        professorId: user.id || user.professorId,
+        turmaId: turmaId || null,
+      });
 
       toast.success("Artigo publicado com sucesso!");
       onSaved(saved);
@@ -655,6 +492,20 @@ function NovoArtigoModal({ user, turmas, onClose, onSaved }) {
                 })}
               </select>
             </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-bold text-gray-700">
+                URL do artigo/site
+              </label>
+
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://exemplo.com"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold outline-none focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+              />
+            </div>
           </div>
 
           <div>
@@ -672,7 +523,7 @@ function NovoArtigoModal({ user, turmas, onClose, onSaved }) {
                 height: "300px",
                 marginBottom: "60px",
               }}
-          />
+            />
           </div>
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">

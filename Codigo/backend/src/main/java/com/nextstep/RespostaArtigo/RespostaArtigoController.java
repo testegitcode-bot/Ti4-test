@@ -30,37 +30,11 @@ public class RespostaArtigoController {
         return service.listarPorAluno(alunoId);
     }
 
-    @GetMapping("/pendentes")
-    public List<RespostaArtigoResponseDTO> listarPendentes() {
-        return service.listarPendentes();
-    }
-
-    @GetMapping("/destaques")
-    public List<RespostaArtigoResponseDTO> listarDestaques() {
-        return service.listarDestaques();
-    }
-
-    @PutMapping("/{id}/aprovar")
-    public RespostaArtigoResponseDTO aprovar(
+    @PutMapping("/{id}/nota")
+    public RespostaArtigoResponseDTO avaliarComNota(
             @PathVariable Long id,
-            @RequestBody RespostaArtigoAprovacaoDTO dto
+            @RequestBody RespostaArtigoNotaDTO dto
     ) {
-        return service.aprovar(id, dto.getDestaque());
-    }
-
-    @PutMapping("/{id}/reprovar")
-    public RespostaArtigoResponseDTO reprovar(
-            @PathVariable Long id,
-            @RequestBody RespostaArtigoFeedbackDTO dto
-    ) {
-        return service.reprovar(id, dto.getFeedback());
-    }
-
-    @PutMapping("/{id}/reenviar")
-    public RespostaArtigoResponseDTO reenviar(
-            @PathVariable Long id,
-            @RequestBody RespostaArtigoReenvioDTO dto
-    ) {
-        return service.reenviar(id, dto.getConteudo());
+        return service.avaliarComNota(id, dto.getNota());
     }
 }

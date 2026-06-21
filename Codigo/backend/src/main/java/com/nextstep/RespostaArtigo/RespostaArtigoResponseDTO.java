@@ -8,15 +8,11 @@ public class RespostaArtigoResponseDTO {
 
     private String conteudo;
 
-    private String status;
-
-    private Boolean destaque;
-
-    private String feedbackProfessor;
+    private Integer nota;
 
     private LocalDateTime dataResposta;
 
-    private LocalDateTime prazoReenvio;
+    private LocalDateTime dataAvaliacao;
 
     private Long artigoId;
 
@@ -42,28 +38,12 @@ public class RespostaArtigoResponseDTO {
         this.conteudo = conteudo;
     }
 
-    public String getStatus() {
-        return status;
+    public Integer getNota() {
+        return nota;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Boolean getDestaque() {
-        return destaque;
-    }
-
-    public void setDestaque(Boolean destaque) {
-        this.destaque = destaque;
-    }
-
-    public String getFeedbackProfessor() {
-        return feedbackProfessor;
-    }
-
-    public void setFeedbackProfessor(String feedbackProfessor) {
-        this.feedbackProfessor = feedbackProfessor;
+    public void setNota(Integer nota) {
+        this.nota = nota;
     }
 
     public LocalDateTime getDataResposta() {
@@ -74,12 +54,12 @@ public class RespostaArtigoResponseDTO {
         this.dataResposta = dataResposta;
     }
 
-    public LocalDateTime getPrazoReenvio() {
-        return prazoReenvio;
+    public LocalDateTime getDataAvaliacao() {
+        return dataAvaliacao;
     }
 
-    public void setPrazoReenvio(LocalDateTime prazoReenvio) {
-        this.prazoReenvio = prazoReenvio;
+    public void setDataAvaliacao(LocalDateTime dataAvaliacao) {
+        this.dataAvaliacao = dataAvaliacao;
     }
 
     public Long getArtigoId() {

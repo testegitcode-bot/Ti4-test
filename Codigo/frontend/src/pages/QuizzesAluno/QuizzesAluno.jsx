@@ -8,7 +8,7 @@ export default function QuizzesAluno() {
 
   const [quizzes, setQuizzes] = useState([]);
   const [quizzesRespondidos, setQuizzesRespondidos] = useState([]);
-
+  const [avaliando, setAvaliando] = useState(false);
   const [quizSelecionado, setQuizSelecionado] = useState(null);
   const [respostas, setRespostas] = useState({});
   const [finalizado, setFinalizado] = useState(false);
@@ -98,51 +98,59 @@ export default function QuizzesAluno() {
   }
 
   async function finalizarQuiz() {
-    if (!quizSelecionado) return;
+    if (!quizSelecionado || avaliando) return;
 
-    let total = 0;
+    try {
+      setAvaliando(true);
 
-    quizSelecionado.questoes.forEach((questao) => {
-      const idAlternativaSelecionada = respostas[questao.id];
+      let total = 0;
 
-      const alternativaSelecionada = questao.alternativas.find(
-        (alternativa) => alternativa.id === idAlternativaSelecionada
-      );
+      quizSelecionado.questoes.forEach((questao) => {
+        const idAlternativaSelecionada = respostas[questao.id];
 
-      if (alternativaSelecionada?.correta) {
-        total += questao.pontos;
+        const alternativaSelecionada = questao.alternativas.find(
+          (alternativa) => alternativa.id === idAlternativaSelecionada
+        );
+
+        if (alternativaSelecionada?.correta) {
+          total += questao.pontos;
+        }
+      });
+
+      const resposta = await fetch("/api/resultados-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          alunoId: user.id,
+          quizId: quizSelecionado.id,
+          turmaId: idTurma,
+          pontuacao: total,
+          totalPontos: calcularTotalPontos(quizSelecionado),
+          respostas: Object.entries(respostas).map(
+            ([questaoId, alternativaId]) => ({
+              questaoId: Number(questaoId),
+              alternativaId: Number(alternativaId),
+            })
+          ),
+        }),
+      });
+
+      if (!resposta.ok) {
+        alert("Erro ao salvar resultado do quiz.");
+        return;
       }
-    });
 
-    const resposta = await fetch("/api/resultados-quiz", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        alunoId: user.id,
-        quizId: quizSelecionado.id,
-        turmaId: idTurma,
-        pontuacao: total,
-        totalPontos: calcularTotalPontos(quizSelecionado),
-        respostas: Object.entries(respostas).map(
-          ([questaoId, alternativaId]) => ({
-            questaoId: Number(questaoId),
-            alternativaId: Number(alternativaId),
-          })
-        ),
-      }),
-    });
-
-    if (!resposta.ok) {
-      alert("Erro ao salvar resultado do quiz.");
-      return;
+      setPontuacao(total);
+      setFinalizado(true);
+      setQuizzesRespondidos((prev) => [...prev, quizSelecionado.id]);
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao avaliar o quiz.");
+    } finally {
+      setAvaliando(false);
     }
-
-    setPontuacao(total);
-    setFinalizado(true);
-
-    setQuizzesRespondidos((prev) => [...prev, quizSelecionado.id]);
   }
 
   function calcularTotalPontos(quiz) {
@@ -294,13 +302,19 @@ export default function QuizzesAluno() {
             </div>
 
             {!finalizado ? (
-              <button
-                className="btn-finalizar"
-                onClick={finalizarQuiz}
-                disabled={!todasQuestoesRespondidas()}
-              >
-                Finalizar quiz
-              </button>
+             <button className="btn-finalizar"
+              onClick={finalizarQuiz}
+              disabled={!todasQuestoesRespondidas() || avaliando}
+            >
+              {avaliando ? (
+                <span className="btn-loading">
+                  <span className="spinner"></span>
+                  Avaliando...
+                </span>
+              ) : (
+                "Finalizar quiz"
+              )}
+            </button>
             ) : (
               <div className="resultado-card">
                 <h2>Resultado</h2>
@@ -308,6 +322,10 @@ export default function QuizzesAluno() {
                   Você fez <strong>{pontuacao}</strong> de{" "}
                   <strong>{calcularTotalPontos(quizSelecionado)}</strong> pontos.
                 </p>
+
+                <button className="btn-sair-quiz" onClick={voltarParaLista}>
+                  Sair
+                </button>
               </div>
             )}
           </div>

@@ -1,5 +1,6 @@
 package com.nextstep.RespostaArtigo;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -9,7 +10,6 @@ import com.nextstep.Aluno.Aluno;
 import com.nextstep.Aluno.AlunoRepository;
 import com.nextstep.Artigo.Artigo;
 import com.nextstep.Artigo.ArtigoRepository;
-import java.time.LocalDateTime;
 
 @Service
 public class RespostaArtigoService {
@@ -43,7 +43,6 @@ public class RespostaArtigoService {
         resposta.setConteudo(dto.getConteudo());
         resposta.setArtigo(artigo);
         resposta.setAluno(aluno);
-        resposta.setStatus("PENDENTE");
 
         return toDTO(repository.save(resposta));
     }
@@ -62,83 +61,29 @@ public class RespostaArtigoService {
                 .toList();
     }
 
-    public List<RespostaArtigoResponseDTO> listarPendentes() {
-        return repository.findByStatus("PENDENTE")
-                .stream()
-                .map(this::toDTO)
-                .toList();
-    }
-
-    public List<RespostaArtigoResponseDTO> listarDestaques() {
-        return repository.findByStatusOrderByDataRespostaDesc("APROVADA")
-                .stream()
-                .map(this::toDTO)
-                .toList();
-    }
-
     @Transactional
-public RespostaArtigoResponseDTO aprovar(Long id, Boolean destaque) {
-    RespostaArtigo resposta = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Resposta não encontrada"));
+    public RespostaArtigoResponseDTO avaliarComNota(Long id, Integer nota) {
+        if (nota == null || nota < 0 || nota > 100) {
+            throw new RuntimeException("A nota deve estar entre 0 e 100");
+        }
 
-    resposta.setStatus("APROVADA");
-    resposta.setFeedbackProfessor(null);
-    resposta.setDestaque(destaque != null && destaque);
+        RespostaArtigo resposta = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resposta não encontrada"));
 
-    return toDTO(repository.save(resposta));
-}
+        resposta.setNota(nota);
+        resposta.setDataAvaliacao(LocalDateTime.now());
 
-    @Transactional
-public RespostaArtigoResponseDTO reprovar(Long id, String feedback) {
-    RespostaArtigo resposta = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Resposta não encontrada"));
-
-    resposta.setStatus("REPROVADA");
-    resposta.setFeedbackProfessor(feedback);
-    resposta.setDestaque(false);
-    resposta.setPrazoReenvio(LocalDateTime.now().plusDays(3));
-
-    return toDTO(repository.save(resposta));
-}
-
-@Transactional
-public RespostaArtigoResponseDTO reenviar(Long id, String conteudo) {
-    if (conteudo == null || conteudo.isBlank()) {
-        throw new RuntimeException("A resposta não pode estar vazia");
+        return toDTO(repository.save(resposta));
     }
-
-    RespostaArtigo resposta = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Resposta não encontrada"));
-
-    if (!"REPROVADA".equals(resposta.getStatus())) {
-        throw new RuntimeException("Apenas respostas reprovadas podem ser reenviadas");
-    }
-
-    if (resposta.getPrazoReenvio() == null ||
-            LocalDateTime.now().isAfter(resposta.getPrazoReenvio())) {
-        throw new RuntimeException("O prazo para reenvio desta resposta expirou");
-    }
-
-    resposta.setConteudo(conteudo);
-    resposta.setStatus("PENDENTE");
-    resposta.setFeedbackProfessor(null);
-    resposta.setDestaque(false);
-    resposta.setPrazoReenvio(null);
-    resposta.setDataResposta(LocalDateTime.now());
-
-    return toDTO(repository.save(resposta));
-}
 
     private RespostaArtigoResponseDTO toDTO(RespostaArtigo resposta) {
         RespostaArtigoResponseDTO dto = new RespostaArtigoResponseDTO();
 
         dto.setId(resposta.getId());
         dto.setConteudo(resposta.getConteudo());
-        dto.setStatus(resposta.getStatus());
-        dto.setFeedbackProfessor(resposta.getFeedbackProfessor());
+        dto.setNota(resposta.getNota());
         dto.setDataResposta(resposta.getDataResposta());
-        dto.setPrazoReenvio(resposta.getPrazoReenvio());
-        dto.setDestaque(resposta.getDestaque());
+        dto.setDataAvaliacao(resposta.getDataAvaliacao());
 
         if (resposta.getArtigo() != null) {
             dto.setArtigoId(resposta.getArtigo().getId());

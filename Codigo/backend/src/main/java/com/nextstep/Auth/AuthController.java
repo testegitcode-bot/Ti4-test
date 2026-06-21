@@ -5,6 +5,8 @@ import com.nextstep.Aluno.AlunoRepository;
 import com.nextstep.Email.EmailService;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Professor.ProfessorRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory; // Importante para o Logger
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +20,10 @@ import java.util.Map;
 @CrossOrigin("*")
 public class AuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class); // Criando o Logger
     private final AlunoRepository alunoRepository;
     private final ProfessorRepository professorRepository;
     private final EmailService emailService;
-
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public AuthController(AlunoRepository alunoRepository, ProfessorRepository professorRepository,
@@ -31,50 +33,38 @@ public class AuthController {
         this.emailService = emailService;
     }
 
-    // LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-
         String email = request.email();
         String senha = request.senha();
 
-        // tenta aluno
         var aluno = alunoRepository.findByEmail(email);
-
         if (aluno.isPresent() && aluno.get().getSenha().equals(senha)) {
-            Aluno a = aluno.get();
-
-            return ResponseEntity.ok(new AuthResponse(
-                    a.getId(),
-                    a.getNome(),
-                    a.getEmail(),
-                    "student"
-            ));
+            return ResponseEntity.ok(new AuthResponse(aluno.get().getId(), aluno.get().getNome(), aluno.get().getEmail(), "student"));
         }
 
-        // tenta professor
         var professor = professorRepository.findByEmail(email);
-
-        if (professor.isPresent() && professor.get().getSenha().equals(senha)) {
+        if (professor.isPresent()) {
             Professor p = professor.get();
 
-            if (!p.isAtivo()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                        Map.of("message", "Esta conta de professor ainda aguarda validação da diretoria.")
-                );
+            // Usando o log.info em vez de System.out.println
+            log.info("Tentativa de login de Professor: {}", email);
+
+            if (!p.getSenha().equals(senha)) {
+                log.warn("Falha no login: Senha incorreta para {}", email);
+                return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
             }
 
-            return ResponseEntity.ok(new AuthResponse(
-                    p.getId(),
-                    p.getNome(),
-                    p.getEmail(),
-                    "teacher"
-            ));
+            if (p.isAtivo() == null || !p.isAtivo()) {
+                log.warn("Falha no login: Professor {} está inativo", email);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Esta conta de professor ainda aguarda validação da diretoria."));
+            }
+
+            log.info("Login efetuado com sucesso para professor: {}", email);
+            return ResponseEntity.ok(new AuthResponse(p.getId(), p.getNome(), p.getEmail(), "teacher"));
         }
 
-        return ResponseEntity.status(401).body(
-                Map.of("message", "Invalid email or password")
-        );
+        return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
     }
 
     // REGISTER
@@ -111,7 +101,7 @@ public class AuthController {
             professor.setNome(request.nome());
             professor.setEmail(request.email());
             professor.setSenha(request.senha());
-            professor.setAtivo(false);
+            professor.setAtivo(Boolean.FALSE);
             professor.setCodigoValidacao(codigo);
             professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
 
@@ -125,11 +115,10 @@ public class AuthController {
                 );
             }
 
-            return ResponseEntity.ok(new AuthResponse(
-                    saved.getId(),
-                    saved.getNome(),
-                    saved.getEmail(),
-                    "teacher"
+            return ResponseEntity.ok(Map.of(
+                    "message", "Cadastro realizado com sucesso! Um código de validação foi enviado para o seu e-mail.",
+                    "requiresVerification", true,
+                    "email", saved.getEmail()
             ));
         }
 
@@ -145,23 +134,70 @@ public class AuthController {
         Professor professor = professorRepository.findByEmail(request.email())
                 .orElse(null);
 
-        if (professor == null
-                || professor.getCodigoValidacao() == null
-                || !professor.getCodigoValidacao().equals(request.codigo())
-                || professor.getDataExpiracaoCodigo() == null
-                || LocalDateTime.now().isAfter(professor.getDataExpiracaoCodigo())) {
-
+        // 1. Verifica se o professor existe
+        if (professor == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    Map.of("message", "Código inválido ou expirado.")
+                    Map.of("message", "Professor não encontrado.")
             );
         }
 
-        professor.setAtivo(true);
+        // 2. Verifica se o código bate
+        if (professor.getCodigoValidacao() == null || !professor.getCodigoValidacao().equals(request.codigo())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    Map.of("message", "Código inválido. Por favor, solicite um novo.")
+            );
+        }
+
+        // 3. Verifica se o código expirou
+        if (professor.getDataExpiracaoCodigo() == null || LocalDateTime.now().isAfter(professor.getDataExpiracaoCodigo())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    Map.of("message", "Código expirado. Por favor, solicite um novo.")
+            );
+        }
+
+        // Se passou em tudo, ativa o professor
+        professor.setAtivo(Boolean.TRUE);
         professor.setCodigoValidacao(null);
         professor.setDataExpiracaoCodigo(null);
         professorRepository.save(professor);
 
-        return ResponseEntity.ok(Map.of("message", "Conta validada com sucesso. O professor já pode fazer login."));
+        return ResponseEntity.ok(new AuthResponse(
+                professor.getId(),
+                professor.getNome(),
+                professor.getEmail(),
+                "teacher" 
+        ));
+    }
+
+    // REENVIAR CODIGO
+    @PostMapping("/resend-code")
+    public ResponseEntity<?> resendCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        var professorOpt = professorRepository.findByEmail(email);
+
+        if (professorOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Professor não encontrado"));
+        }
+
+        Professor professor = professorOpt.get();
+        // Gera um novo código
+        String novoCodigo = String.format("%06d", RANDOM.nextInt(1_000_000));
+        
+        // Atualiza o banco
+        professor.setCodigoValidacao(novoCodigo);
+        professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
+        professorRepository.save(professor);
+
+        // Reenvia o e-mail
+        try {
+            emailService.enviarCodigoValidacaoProfessor(professor.getNome(), professor.getEmail(), novoCodigo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("message", "Falha ao reenviar e-mail: " + e.getMessage())
+            );
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Novo código enviado com sucesso!"));
     }
 
     // DTOs

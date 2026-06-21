@@ -2,10 +2,57 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RotateCcw, Trophy, Heart, Pause, Play } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trophy, Heart, Pause, Play, Wind } from 'lucide-react';
 import Footer from '@/components/Footer.jsx';
-import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
+
+/* ─── Curiosidades (Trivia) ──────────────────────────────────────── */
+// Banco de curiosidades sobre sustentabilidade e reciclagem.
+// Essas mensagens educacionais podem ser exibidas durante as partidas 
+// ou na tela de fim de jogo para engajar o jogador.
+const TRIVIA_BANK = [
+  "Did you know? It takes 500 years for a plastic bottle to decompose!",
+  "Did you know? Recycling one aluminum can saves enough energy to listen to a full album on your phone!",
+  "Did you know? Paper can be recycled up to 7 times before the fibers become too short.",
+  "Did you know? Over 8 million tons of plastic enter the oceans every year.",
+  "Did you know? Composting organic waste greatly reduces greenhouse gas emissions.",
+  "Did you know? Glass is 100% recyclable and can be recycled endlessly without loss in quality or purity.",
+  "Did you know? Throwing batteries in the general trash leaks toxic chemicals into the soil and water."
+];
+
+/* ─── Configurações de Dificuldade ────────────────────────────────── */
+const DIFFICULTIES = {
+  easy: {
+    label: '😊 Easy',
+    lives: 5,
+    baseFall: 4600,
+    baseInterval: 2600,
+    speedMultiplier: 10,
+    intervalMultiplier: 8,
+    windThreshold: 600,
+    hazardChance: 0.08
+  },
+  medium: {
+    label: '😤 Medium',
+    lives: 3,
+    baseFall: 3800,
+    baseInterval: 2200,
+    speedMultiplier: 12,
+    intervalMultiplier: 10,
+    windThreshold: 450,
+    hazardChance: 0.15
+  },
+  hard: {
+    label: '🔥 Hard',
+    lives: 2,
+    baseFall: 3000,
+    baseInterval: 1600,
+    speedMultiplier: 15,
+    intervalMultiplier: 14,
+    windThreshold: 300,
+    hazardChance: 0.22
+  }
+};
 
 /* ─── Item types & Configs ───────────────────────────────────────── */
 const ITEM_TYPES = [
@@ -82,8 +129,8 @@ const ALL_ITEMS = [
   { id: 'hazard',  emoji: '🧪', label: 'Chemicals' },
 ];
 
-function getRandomItem() {
-  const isHazard = Math.random() < 0.15;
+function getRandomItem(hazardChance) {
+  const isHazard = Math.random() < hazardChance;
   if (isHazard) {
     const hazards = ALL_ITEMS.filter(i => i.id === 'hazard');
     return hazards[Math.floor(Math.random() * hazards.length)];
@@ -96,12 +143,18 @@ const CONTAINER_HEIGHT = 420;
 
 export default function RecyclingGame() {
   const [gameState, setGameState] = useState('start'); 
+  const [diffKey, setDiffKey]     = useState('medium'); // Estado da dificuldade ativa
   const [score, setScore]         = useState(0);
   const [lives, setLives]         = useState(3);
   const [items, setItems]         = useState([]); 
   const [feedback, setFeedback]   = useState(null); 
   const [combo, setCombo]         = useState(0);
   const [activeBin, setActiveBin] = useState(null);
+  
+  const [trivia, setTrivia]       = useState('');
+  const [isWindy, setIsWindy]     = useState(false);
+  const [windWarning, setWindWarning] = useState(false);
+
   const [highScore, setHighScore] = useState(() => {
     try { return parseInt(localStorage.getItem('recycling_hs') || '0'); } catch { return 0; }
   });
@@ -124,13 +177,13 @@ export default function RecyclingGame() {
   const spawnItem = useCallback(() => {
     if (stateRef.current !== 'playing') return;
     
-    const item = getRandomItem();
+    const currentDiff = DIFFICULTIES[diffKey];
+    const item = getRandomItem(currentDiff.hazardChance);
     const id   = nextIdRef.current++;
-    const x    = 10 + Math.random() * 65; 
+    const x    = 15 + Math.random() * 70; 
 
-    // VELOCIDADE VARIÁVEL: Base calculada pelo score, mas com +/- 600ms de variação aleatória
-    // Isso impede que itens caiam exatamente grudados um no outro
-    const baseFall = Math.max(1500, 3800 - scoreRef.current * 12);
+    // VELOCIDADE VARIÁVEL adaptada pela dificuldade
+    const baseFall = Math.max(1300, currentDiff.baseFall - scoreRef.current * currentDiff.speedMultiplier);
     const speedVariation = (Math.random() * 1200) - 600; 
     const fallDuration = baseFall + speedVariation;
 
@@ -138,7 +191,7 @@ export default function RecyclingGame() {
       ...prev,
       { ...item, uid: id, x, spawnedAt: Date.now(), fallDuration, caught: null },
     ]);
-  }, []);
+  }, [diffKey]);
 
   useEffect(() => {
     if (gameState !== 'playing') {
@@ -146,26 +199,29 @@ export default function RecyclingGame() {
       return;
     }
 
-    // Usando setTimeout recursivo em vez de setInterval
-    // Isso evita o reset de timer quando o componente atualiza e permite intervalos randômicos
     const scheduleNextSpawn = () => {
       spawnItem();
-      
-      const baseInterval = Math.max(900, 2200 - scoreRef.current * 10);
-      const randomOffset = (Math.random() * 600) - 200; // Entre -200ms e +400ms
+      const currentDiff = DIFFICULTIES[diffKey];
+      const baseInterval = Math.max(800, currentDiff.baseInterval - scoreRef.current * currentDiff.intervalMultiplier);
+      const randomOffset = (Math.random() * 600) - 200; 
       const nextInterval = baseInterval + randomOffset;
-      
       spawnRef.current = setTimeout(scheduleNextSpawn, nextInterval);
     };
 
     spawnRef.current = setTimeout(scheduleNextSpawn, 800);
-    
     return () => clearTimeout(spawnRef.current);
-  }, [gameState, spawnItem]); // Note que removemos 'score' daqui para evitar resets bruscos
+  }, [gameState, spawnItem, diffKey]); 
 
   /* ── Game Logic: Remove Item ───────────────────────────── */
   const removeItem = useCallback((uid) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
+  }, []);
+
+  /* ── Game Over Trigger ─────────────────────────────────── */
+  const triggerGameOver = useCallback(() => {
+    setGameState('over');
+    stateRef.current = 'over';
+    setTrivia(TRIVIA_BANK[Math.floor(Math.random() * TRIVIA_BANK.length)]);
   }, []);
 
   /* ── Game Logic: Item reaches bottom ───────────────────── */
@@ -188,12 +244,9 @@ export default function RecyclingGame() {
       setFeedback({ id: Date.now(), text: '💨 Missed!', color: 'text-gray-500', x: item.x });
       removeItem(item.uid);
 
-      if (newLives <= 0) {
-        setGameState('over');
-        stateRef.current = 'over';
-      }
+      if (newLives <= 0) triggerGameOver();
     }
-  }, [removeItem]);
+  }, [removeItem, triggerGameOver]);
 
   /* ── Game Logic: Bin Interaction ───────────────────────── */
   const handleBinClick = useCallback((binId) => {
@@ -208,8 +261,6 @@ export default function RecyclingGame() {
 
       const now = Date.now();
       
-      // NOVA LÓGICA DE DETECÇÃO: Encontra o item fisicamente mais abaixo na tela
-      // Analisando a porcentagem de progresso em vez de apenas o tempo de vida
       const scored = activeItems.reduce((best, item) => {
         const itemProgress = (now - item.spawnedAt) / item.fallDuration;
         const bestProgress = best ? (now - best.spawnedAt) / best.fallDuration : -Infinity;
@@ -218,7 +269,6 @@ export default function RecyclingGame() {
 
       if (!scored) return prev;
 
-      // Só permite pegar se já estiver na metade de baixo
       const progress = (now - scored.spawnedAt) / scored.fallDuration;
       if (progress < 0.30) return prev; 
 
@@ -232,10 +282,8 @@ export default function RecyclingGame() {
         comboRef.current = 0;
         setCombo(0);
         
-        if (newLives <= 0) {
-          setGameState('over');
-          stateRef.current = 'over';
-        }
+        if (newLives <= 0) triggerGameOver();
+
       } else if (scored.id === binId) {
         newStatus = 'success';
         const newCombo = comboRef.current + 1;
@@ -258,32 +306,30 @@ export default function RecyclingGame() {
         livesRef.current = newLives;
         setLives(newLives);
 
-        if (newLives <= 0) {
-          setGameState('over');
-          stateRef.current = 'over';
-        }
+        if (newLives <= 0) triggerGameOver();
       }
 
       return prev.map(i => i.uid === scored.uid ? { ...i, caught: newStatus } : i);
     });
-  }, []);
+  }, [triggerGameOver]);
+
+  /* ── Controle do Vento (Wind Factor) ───────────────────── */
+  useEffect(() => {
+    const currentDiff = DIFFICULTIES[diffKey];
+    if (score >= currentDiff.windThreshold && !isWindy) {
+      setIsWindy(true);
+      setWindWarning(true);
+      setTimeout(() => setWindWarning(false), 3000);
+    }
+  }, [score, isWindy, diffKey]);
 
   /* ── Keyboard Controls ─────────────────────────────────── */
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (stateRef.current !== 'playing') return;
-      
-      const keyMap = {
-        '1': 'plastic',
-        '2': 'paper',
-        '3': 'organic',
-        '4': 'general',
-      };
-      
+      const keyMap = { '1': 'plastic', '2': 'paper', '3': 'organic', '4': 'general' };
       const binId = keyMap[e.key];
-      if (binId) {
-        handleBinClick(binId);
-      }
+      if (binId) handleBinClick(binId);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -292,13 +338,18 @@ export default function RecyclingGame() {
 
   /* ── Start / reset ──────────────────────────────────────── */
   const startGame = () => {
+    const currentDiff = DIFFICULTIES[diffKey];
     pontuacaoEnviadaRef.current = false;
     setScore(0);
-    setLives(3);
+    setLives(currentDiff.lives);
     setItems([]);
     setFeedback(null);
     setCombo(0);
-    livesRef.current    = 3;
+    setIsWindy(false);
+    setWindWarning(false);
+    setTrivia('');
+    
+    livesRef.current    = currentDiff.lives;
     scoreRef.current    = 0;
     comboRef.current    = 0;
     stateRef.current    = 'playing';
@@ -321,19 +372,17 @@ export default function RecyclingGame() {
   useEffect(() => {
     if (gameState === 'over' && !pontuacaoEnviadaRef.current) {
       pontuacaoEnviadaRef.current = true;
-
       salvarPontuacao("Recycling Master", score)
-        .then((resposta) => {
-          if (resposta) {
-            console.log("Pontuação final do Recycling salva com sucesso");
-          }
-        })
-        .catch((erro) => console.error("Erro ao salvar pontuação:", erro));
+        .then((resposta) => { if (resposta) console.log("Pontuação salva"); })
+        .catch((erro) => console.error("Erro ao salvar:", erro));
     }
   }, [gameState, score]);
 
+  /* ── Cálculo da Evolução do Cenário ─────────────────────── */
+  const cleanProgress = Math.min(1, score / DIFFICULTIES[diffKey].windThreshold);
+
   /* ═══════════════════════════════════════════════════════════
-     RENDER
+      RENDER
   ═══════════════════════════════════════════════════════════ */
   return (
     <>
@@ -348,8 +397,9 @@ export default function RecyclingGame() {
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <h1 className="text-xl font-black text-secondary uppercase tracking-widest">
-            ♻️ Recycling Master
+          <h1 className="text-xl font-black text-secondary uppercase tracking-widest flex items-center gap-2">
+            ♻️ Recycling Master {gameState === 'playing' && `· ${DIFFICULTIES[diffKey].label}`}
+            {isWindy && <Wind className="w-5 h-5 text-blue-500 animate-pulse" />}
           </h1>
           {(gameState === 'playing' || gameState === 'paused') ? (
             <button
@@ -367,7 +417,7 @@ export default function RecyclingGame() {
         <div className="max-w-5xl mx-auto w-full px-4 mt-3">
           <div className="flex items-center justify-between bg-white rounded-3xl border-4 border-secondary px-6 py-3 shadow-md">
             <div className="flex gap-1">
-              {[0,1,2].map((i) => (
+              {Array.from({ length: DIFFICULTIES[diffKey].lives }).map((_, i) => (
                 <Heart key={i} className={`w-7 h-7 transition-all ${i < lives ? 'text-primary fill-primary' : 'text-gray-300'}`} />
               ))}
             </div>
@@ -389,9 +439,27 @@ export default function RecyclingGame() {
           <div className="relative w-full bg-slate-800 border-4 border-secondary rounded-t-3xl overflow-hidden shadow-inner"
             style={{ height: CONTAINER_HEIGHT }}
           >
+            
+            {/* ─── SCENARIO EVOLUTION LAYERS ─── */}
+            <div className="absolute inset-0 bg-blue-300 transition-colors duration-1000 z-0" />
+            
+            <div className="absolute rounded-full bg-yellow-300 shadow-[0_0_50px_20px_rgba(253,224,71,0.6)] transition-all duration-1000 z-0"
+                 style={{ 
+                   width: 100, height: 100, right: '15%', 
+                   top: `${40 - cleanProgress * 30}%`, 
+                   opacity: cleanProgress 
+                 }} />
+
+            <div className="absolute inset-0 bg-slate-800 transition-opacity duration-1000 z-0"
+                 style={{ opacity: 1 - cleanProgress }} />
+
+            <div className="absolute bottom-0 w-full h-16 bg-green-500 rounded-t-[100%] transition-all duration-1000 origin-bottom z-0"
+                 style={{ transform: `scaleY(${cleanProgress})`, opacity: cleanProgress }} />
+            {/* ─────────────────────────────── */}
+
             {/* Catch zone visual indicator */}
-            <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
-            <div className="absolute bottom-[45%] left-0 right-0 h-0.5 bg-white/20 border-dashed border-b-2 border-white/30 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-gradient-to-t from-white/20 to-transparent pointer-events-none z-10" />
+            <div className="absolute bottom-[45%] left-0 right-0 h-0.5 bg-white/40 border-dashed border-b-2 border-white/60 pointer-events-none z-10" />
 
             {/* Overlays */}
             <AnimatePresence>
@@ -399,32 +467,74 @@ export default function RecyclingGame() {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 bg-secondary/95 z-40 flex flex-col items-center justify-center gap-4"
+                  className="absolute inset-0 bg-secondary/95 z-40 flex flex-col items-center justify-center p-6 text-center"
                 >
-                  <Trophy className="w-20 h-20 text-accent" />
-                  <h2 className="text-5xl font-black text-white">Game Over!</h2>
-                  <p className="text-2xl font-bold text-accent">Score: {score}</p>
-                  {score >= highScore && score > 0 && (
-                    <p className="text-lg font-bold text-yellow-300">🏆 New High Score!</p>
+                  <Trophy className="w-16 h-16 text-accent mb-2" />
+                  <h2 className="text-4xl font-black text-white mb-2">Game Over!</h2>
+                  <p className="text-2xl font-bold text-accent mb-4">Score: {score}</p>
+                  
+                  {trivia && (
+                    <div className="bg-blue-50/10 border-2 border-blue-300/30 rounded-2xl p-4 max-w-md w-full mb-6">
+                      <p className="text-sm font-black text-blue-300 mb-1 uppercase tracking-wider">💡 Did you know?</p>
+                      <p className="text-sm font-medium text-blue-100 leading-snug">{trivia}</p>
+                    </div>
                   )}
-                  <p className="text-base font-medium text-white/70">Best: {highScore}</p>
+
                   <button
                     onClick={startGame}
-                    className="flex items-center gap-2 mt-2 rounded-full bg-primary hover:bg-primary-dark text-white font-bold text-xl h-14 px-8 shadow-[0_6px_0_hsl(1,72%,29%)] active:translate-y-1 active:shadow-none transition-all"
+                    className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-dark text-white font-bold text-xl h-14 px-8 shadow-[0_6px_0_hsl(1,72%,29%)] active:translate-y-1 active:shadow-none transition-all"
                   >
                     <RotateCcw className="w-5 h-5" /> Play Again
                   </button>
                 </motion.div>
               )}
+
+              {windWarning && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)' }}
+                  className="absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center pointer-events-none"
+                >
+                  <div className="text-center px-10 py-6 bg-white rounded-3xl border-8 border-blue-400 shadow-2xl">
+                    <Wind className="w-20 h-20 text-blue-500 mx-auto mb-2 animate-bounce" />
+                    <h2 className="text-4xl font-black text-blue-600 italic">WIND WARNING!</h2>
+                    <p className="text-lg font-bold text-slate-500 mt-2">Watch out for the swaying items!</p>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             {gameState === 'start' && (
-              <div className="absolute inset-0 bg-secondary/95 z-40 flex flex-col items-center justify-center gap-6">
-                <div className="text-6xl">♻️</div>
-                <h2 className="text-4xl font-black text-white">Ready to sort?</h2>
+              <div className="absolute inset-0 bg-secondary/95 z-40 flex flex-col items-center justify-center p-6 text-center">
+                <div className="text-6xl mb-2">♻️</div>
+                <h2 className="text-4xl font-black text-white mb-6">Ready to sort?</h2>
+                
+                {/* Seletor de Dificuldade */}
+                <div className="max-w-md w-full mb-8 bg-white/10 p-4 rounded-3xl border border-white/20">
+                  <p className="text-xs font-black text-accent uppercase tracking-wider mb-3">Select Difficulty:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(DIFFICULTIES).map(([key, d]) => (
+                      <button
+                        key={key}
+                        onClick={() => setDiffKey(key)}
+                        className={`rounded-2xl border-4 py-3 px-2 font-bold text-xs sm:text-sm transition-all ${
+                          diffKey === key 
+                            ? 'bg-primary text-white border-primary shadow-lg scale-105' 
+                            : 'border-white/30 text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {d.label}
+                        <br />
+                        <span className="text-[10px] opacity-75 font-medium">{d.lives}❤️</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={startGame}
-                  className="rounded-full bg-primary hover:bg-primary-dark text-white font-bold text-2xl h-20 px-14 shadow-[0_8px_0_hsl(1,72%,29%)] active:translate-y-2 active:shadow-none transition-all"
+                  className="rounded-full bg-primary hover:bg-primary-dark text-white font-bold text-2xl h-18 px-14 shadow-[0_8px_0_hsl(1,72%,29%)] active:translate-y-2 active:shadow-none transition-all"
                 >
                   Start Sorting!
                 </button>
@@ -437,12 +547,13 @@ export default function RecyclingGame() {
               </div>
             )}
 
-            {/* Falling items (GPU Accelerated) */}
+            {/* Falling items */}
             {items.map((item) => (
               <FallingItem
                 key={item.uid}
                 item={item}
                 gameState={gameState}
+                isWindy={isWindy} 
                 onMissed={handleItemMissed}
                 onRemove={removeItem}
               />
@@ -504,19 +615,33 @@ export default function RecyclingGame() {
             </div>
           </div>
 
-          <div className="mt-4">
-            <GameTutorial
-              title="Recycling Master"
-              objective="Sort falling trash items into the correct recycling bins before they hit the ground!"
-              controls="Click the bins or use keyboard numbers 1, 2, 3, 4 to catch items in the lower half of the screen."
-              rules={[
-                'Items falling past the dashed line can be sorted.',
-                'Use keys 1 to 4 for lightning-fast sorting.',
-                'Watch out for Hazards (☢️ 💉)! Do NOT click any bin when they are at the bottom. Let them drop.',
-                'Wrong bin or missing a normal item costs a life ❤️.',
-                'The game gets progressively faster. Build combos to multiply your score!',
-              ]}
-            />
+          {/* INSTRUÇÕES DO JOGO */}
+          <div className="mt-8 mb-6 bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+            <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+            <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>🎯</span> Objective & Controls
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• Sort falling trash items into the correct recycling bins before they hit the ground!</li>
+                  <li>• <strong>Click</strong> the bins or use keyboard numbers <strong>1, 2, 3, 4</strong> to catch items.</li>
+                  <li>• Items can only be sorted when they fall past the dashed line.</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>💡</span> Rules & Tips
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• <span className="text-red-600 font-bold">Hazards (☢️ 💉):</span> Do NOT click any bin when they are at the bottom. Let them drop safely!</li>
+                  <li>• Dificuldades mais altas reduzem suas vidas e aceleram a esteira. Fique atento ao alerta de <strong>Wind Warning 🌪️</strong> que surge de acordo com seu score!</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -527,14 +652,13 @@ export default function RecyclingGame() {
 }
 
 /* ─── Sub-component: highly performant falling item ──────────────── */
-function FallingItem({ item, gameState, onMissed, onRemove }) {
+function FallingItem({ item, gameState, isWindy, onMissed, onRemove }) {
   const divRef         = useRef(null);
   const rafRef         = useRef(null);
   const pausedRef      = useRef(false);
   const pausedAtRef    = useRef(0);
   const totalPausedRef = useRef(0);
 
-  // Sync pause state
   useEffect(() => {
     if (gameState === 'paused') {
       pausedRef.current = true;
@@ -545,7 +669,6 @@ function FallingItem({ item, gameState, onMissed, onRemove }) {
     }
   }, [gameState]);
 
-  // Main animation loop
   useEffect(() => {
     if (item.caught) return; 
 
@@ -558,8 +681,11 @@ function FallingItem({ item, gameState, onMissed, onRemove }) {
       const elapsed = Date.now() - item.spawnedAt - totalPausedRef.current;
       const progress = elapsed / item.fallDuration;
 
+      const windOffset = isWindy && !item.caught ? Math.sin(elapsed / 250 + item.uid) * 45 : 0;
+      const rotate = isWindy && !item.caught ? Math.sin(elapsed / 250 + item.uid) * 15 : 0;
+
       if (divRef.current) {
-        divRef.current.style.transform = `translate3d(0, ${progress * (CONTAINER_HEIGHT + 100)}px, 0)`;
+        divRef.current.style.transform = `translate3d(${windOffset}px, ${progress * (CONTAINER_HEIGHT + 100)}px, 0) rotate(${rotate}deg)`;
       }
 
       if (progress >= 1) {
@@ -572,9 +698,8 @@ function FallingItem({ item, gameState, onMissed, onRemove }) {
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [item, onMissed]);
+  }, [item, onMissed, isWindy]);
 
-  // Animation on catch
   useEffect(() => {
     if (item.caught && divRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -606,7 +731,7 @@ function FallingItem({ item, gameState, onMissed, onRemove }) {
   return (
     <div
       ref={divRef}
-      className="absolute flex flex-col items-center gap-1 pointer-events-none z-10 will-change-transform"
+      className="absolute flex flex-col items-center gap-1 pointer-events-none z-20 will-change-transform"
       style={{ left: `${item.x}%`, top: '-80px', marginLeft: '-32px' }} 
     >
       <div

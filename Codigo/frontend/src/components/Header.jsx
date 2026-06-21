@@ -150,8 +150,9 @@ export default function Header() {
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 280, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-0 flex h-full w-72 flex-col gap-3 border-l-4 border-secondary bg-background p-6"
-            >
+              className="absolute right-0 top-0 flex min-h-screen w-72 flex-col gap-3 border-l-4 border-secondary bg-white p-6 shadow-2xl"            
+              >
+
               <button className="self-end" onClick={() => setOpen(false)}>
                 <X className="h-7 w-7 text-secondary" />
               </button>

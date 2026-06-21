@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, Trophy, Eye } from 'lucide-react';
 import Footer from '@/components/Footer.jsx';
-import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
 
 /* ─── Expanded Word Banks per theme ──────────────────────────────── */
@@ -239,21 +238,21 @@ export default function CrosswordGame() {
   const theme = THEMES[themeKey];
 
   function calcularPontuacaoFinal() {
-  const bonusDificuldade = {
-    easy: 500,
-    medium: 1000,
-    hard: 1500,
-  };
+    const bonusDificuldade = {
+      easy: 500,
+      medium: 1000,
+      hard: 1500,
+    };
 
-  const base = bonusDificuldade[diffKey] || 500;
-  const totalPalavras = puzzle?.placements?.length || 0;
-  const pontosPorPalavra = totalPalavras * 100;
+    const base = bonusDificuldade[diffKey] || 500;
+    const totalPalavras = puzzle?.placements?.length || 0;
+    const pontosPorPalavra = totalPalavras * 100;
 
-  const dicasUsadas = diff.revealHints - hintsLeft;
-  const penalidadeDicas = dicasUsadas * 150;
+    const dicasUsadas = diff.revealHints - hintsLeft;
+    const penalidadeDicas = dicasUsadas * 150;
 
-  return Math.max(10, base + pontosPorPalavra - penalidadeDicas);
-}
+    return Math.max(10, base + pontosPorPalavra - penalidadeDicas);
+  }
 
   const startGame = useCallback(() => {
     pontuacaoEnviadaRef.current = false;
@@ -371,18 +370,18 @@ export default function CrosswordGame() {
   };
 
   useEffect(() => {
-  if (won && !pontuacaoEnviadaRef.current) {
-    pontuacaoEnviadaRef.current = true;
+    if (won && !pontuacaoEnviadaRef.current) {
+      pontuacaoEnviadaRef.current = true;
 
-    const pontuacaoFinal = calcularPontuacaoFinal();
+      const pontuacaoFinal = calcularPontuacaoFinal();
 
-    salvarPontuacao("Crossword", pontuacaoFinal)
-        .then((resposta) => {
-          if (resposta) {
-            console.log("Pontuação final do Crossword salva com sucesso");
-          }
-        })
-        .catch((erro) => console.error("Erro ao salvar pontuação:", erro));
+      salvarPontuacao("Crossword", pontuacaoFinal)
+          .then((resposta) => {
+            if (resposta) {
+              console.log("Pontuação final do Crossword salva com sucesso");
+            }
+          })
+          .catch((erro) => console.error("Erro ao salvar pontuação:", erro));
     }
   }, [won, diffKey, hintsLeft, puzzle]);
 
@@ -439,18 +438,36 @@ export default function CrosswordGame() {
                 </div>
               </div>
 
-              <GameTutorial
-                title="Crossword"
-                objective="Fill in all the words in the crossword grid using the clues provided!"
-                controls="Click a cell to select a word. Type letters on your keyboard to fill them in. Press Backspace to erase."
-                rules={[
-                  'Numbers in cells mark the start of a word. Match the number to the clue list.',
-                  'Click the same cell again to switch between Across and Down.',
-                  'Use the Hint button to reveal a whole word (limited uses).',
-                  'Green cells = correct. Red cells = wrong letter.',
-                  'Complete all words to win!',
-                ]}
-              />
+              {/* INSTRUÇÕES DO JOGO - TELA INICIAL */}
+              <div className="mt-8 bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+                <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+                <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>🎯</span> Objective & Controls
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• Fill in all the words in the grid using the clues provided.</li>
+                      <li>• <strong>Click</strong> a cell or a clue to select a word.</li>
+                      <li>• <strong>Type</strong> on your keyboard to fill in the letters.</li>
+                      <li>• <strong>Backspace</strong> to erase mistakes.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>💡</span> Rules & Tips
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• <strong>Click twice</strong> on the same cell to switch between Across (→) and Down (↓).</li>
+                      <li>• <span className="text-green-600 font-bold">Green cells</span> = correct letter. <span className="text-red-500 font-bold">Red cells</span> = wrong letter.</li>
+                      <li>• Stuck? Use the <strong>Hint</strong> button to reveal a full word. Use them wisely!</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
           <Footer />
@@ -592,7 +609,6 @@ export default function CrosswordGame() {
                       {num && (
                         <span className="absolute top-1 left-1.5 text-[10px] font-black text-secondary leading-none">{num}</span>
                       )}
-                      {/* Letra maior para melhor visualização */}
                       <span className="text-xl font-black">{rev ? letter : (input || '')}</span>
                     </div>
                   );
@@ -670,20 +686,39 @@ export default function CrosswordGame() {
           </div>
         </div>
         
-        <div className="max-w-7xl mx-auto w-full px-4 mt-6">
-          <GameTutorial
-            title="Crossword"
-            objective="Fill in all the words using the clues on the right!"
-            controls="Click a cell → select word → type letters. Backspace to erase."
-            rules={[
-              'Click a clue or a cell to select a word.',
-              'Type letters to fill in the selected word.',
-              'Green = correct, Red = wrong letter.',
-              'Click the same cell twice to toggle Across ↔ Down.',
-              'Use Hint button to reveal an entire word (limited!)',
-            ]}
-          />
+        {/* INSTRUÇÕES DO JOGO - TELA PLAYING */}
+        <div className="max-w-7xl mx-auto w-full px-4 mt-8 mb-6">
+          <div className="bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+            <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+            <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>🎯</span> Objective & Controls
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• Fill in all the words in the grid using the clues provided.</li>
+                  <li>• <strong>Click</strong> a cell or a clue to select a word.</li>
+                  <li>• <strong>Type</strong> on your keyboard to fill in the letters.</li>
+                  <li>• <strong>Backspace</strong> to erase mistakes.</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>💡</span> Rules & Tips
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• <strong>Click twice</strong> on the same cell to switch between Across (→) and Down (↓).</li>
+                  <li>• <span className="text-green-600 font-bold">Green cells</span> = correct letter. <span className="text-red-500 font-bold">Red cells</span> = wrong letter.</li>
+                  <li>• Stuck? Use the <strong>Hint</strong> button at the top to reveal a full word. Use them wisely!</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
+        
         <Footer />
       </div>
     </>

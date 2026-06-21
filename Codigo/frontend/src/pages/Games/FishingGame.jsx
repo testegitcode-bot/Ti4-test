@@ -4,10 +4,12 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, Trophy, Heart, CheckCircle2, BookOpen } from 'lucide-react';
 import Footer from '@/components/Footer.jsx';
-import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
 
 /* ─── Vocabulary Rounds ─────────────────────────────────────────── */
+// Array ROUNDS: Estrutura de dados que define todas as fases do jogo de vocabulário.
+// Cada objeto representa um nível, contendo seu tema, as palavras corretas (targets) 
+// e as palavras distrativas (decoys) para aumentar a dificuldade.
 const ROUNDS = [
   {
     theme: '🐾 Animals',
@@ -385,18 +387,35 @@ export default function FishingGame() {
                 </div>
               </div>
 
-              <GameTutorial
-                title="Word Fishing"
-                objective="Memorize the target words, then fish them out! Avoid the decoy fish."
-                controls="Move mouse/finger up and down inside the water area to raise/lower the hook."
-                rules={[
-                  'Study the word list — they will swim in the water.',
-                  'Blue fish 🐠 = target words. Catch them for +20 pts!',
-                  'Dark fish 🐟 = decoy words. Avoid them or lose a life!',
-                  'Catch all target words to complete the round.',
-                  'Difficulty controls speed, number of words and lives.',
-                ]}
-              />
+              {/* INSTRUÇÕES DO JOGO - TELA INICIAL */}
+              <div className="mt-8 bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+                <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+                <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>🎯</span> Objective & Controls
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• Memorize the target words, then fish them out!</li>
+                      <li>• <strong>Move your mouse</strong> (or swipe) up and down inside the water to move the hook.</li>
+                      <li>• The hook catches the first fish it touches.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>💡</span> Rules & Tips
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• <span className="text-blue-600 font-bold">Blue fish 🐠</span> = Target words. (+20 pts)</li>
+                      <li>• <span className="text-slate-600 font-bold">Dark fish 🐟</span> = Decoy words. (-1 life ❤️)</li>
+                      <li>• Catch all target words to win the round!</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
           <Footer />
@@ -616,17 +635,35 @@ export default function FishingGame() {
             <span className="bg-slate-700 text-white rounded-full px-3 py-1">🐟 Decoy — avoid!</span>
           </div>
 
-          <GameTutorial
-            title="Word Fishing"
-            objective="Fish out the target words shown in the blue checklist. Avoid dark decoy fish!"
-            controls="Move mouse (or touch) up and down inside the water area to raise/lower the hook."
-            rules={[
-              'Blue fish 🐠 = target words. Catch them for +20 pts each!',
-              'Dark fish 🐟 = decoy words. Catching one costs a life ❤️.',
-              'Catch all target words to complete the round.',
-              'Difficulty affects fish speed, number of targets/decoys, and lives.',
-            ]}
-          />
+          {/* INSTRUÇÕES DO JOGO - TELA PLAYING */}
+          <div className="mt-8 mb-6 bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+            <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+            <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>🎯</span> Objective & Controls
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• Memorize the target words, then fish them out!</li>
+                  <li>• <strong>Move your mouse</strong> (or swipe) up and down inside the water to move the hook.</li>
+                  <li>• The hook catches the first fish it touches.</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>💡</span> Rules & Tips
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• <span className="text-blue-600 font-bold">Blue fish 🐠</span> = Target words. (+20 pts)</li>
+                  <li>• <span className="text-slate-600 font-bold">Dark fish 🐟</span> = Decoy words. (-1 life ❤️)</li>
+                  <li>• Catch all target words to win the round!</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
         <Footer />
       </div>

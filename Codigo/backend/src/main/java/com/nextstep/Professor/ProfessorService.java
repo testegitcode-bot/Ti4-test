@@ -42,7 +42,7 @@ public class ProfessorService {
         professor.setNome(dto.getNome());
         professor.setEmail(dto.getEmail());
         professor.setSenha(passwordEncoder.encode(dto.getSenha()));
-        professor.setAtivo(false);
+        professor.setAtivo(Boolean.FALSE);
         professor.setCodigoValidacao(codigo);
         professor.setDataExpiracaoCodigo(LocalDateTime.now().plusMinutes(15));
 

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
   Gamepad2, BookOpen, ArrowRight,
   Globe2, Recycle, Zap,
@@ -61,7 +62,7 @@ const GAMES = [
     emoji: '🌊',
     title: 'Ocean Cleanup',
     desc: 'Catch trash before it pollutes the sea! Learn ocean vocabulary while saving marine life.',
-    path: '/login',
+    path: '/games/fishing',
     shadow: 'bg-blue-300',
     rotate: 1.5,
   },
@@ -69,7 +70,7 @@ const GAMES = [
     emoji: '♻️',
     title: 'Recycling Master',
     desc: 'Sort falling items into the right bins! Master recycling words and save the planet.',
-    path: '/login',
+    path: '/games/recycling',
     shadow: 'bg-green-300',
     rotate: -1.5,
   },
@@ -77,7 +78,7 @@ const GAMES = [
     emoji: '🌳',
     title: 'Word Climber',
     desc: 'Type fast to climb the giant tree! Build your vocabulary while reaching for the sky.',
-    path: '/login',
+    path: '/games/typing',
     shadow: 'bg-yellow-300',
     rotate: 1.5,
   },
@@ -92,6 +93,8 @@ const STATS = [
 
 /* ─── Component ───────────────────────────────────────────────── */
 export default function HomePage() {
+  const { user } = useAuth();
+  const playPath = user ? '/games' : '/login';
   return (
     <div className="min-h-screen bg-background font-outfit">
 
@@ -149,7 +152,7 @@ export default function HomePage() {
                 asChild
                 className="h-16 rounded-full bg-primary px-10 text-xl font-black text-white shadow-[0_8px_0_hsl(var(--primary-dark))] transition-all hover:translate-y-1 hover:shadow-[0_4px_0_hsl(var(--primary-dark))] active:translate-y-2 active:shadow-none"
               >
-                <Link to="/login">
+                <Link to={playPath}>
                   <Gamepad2 className="h-6 w-6" /> Play Now
                 </Link>
               </Button>
@@ -336,7 +339,7 @@ export default function HomePage() {
               asChild
               className="h-16 rounded-full border-4 border-white bg-transparent px-10 text-xl font-black text-white transition-all hover:bg-white hover:text-secondary"
             >
-              <Link to="/login">
+              <Link to={playPath}>
                 See All Games <ArrowRight className="ml-2 h-6 w-6" />
               </Link>
             </Button>

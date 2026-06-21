@@ -6,6 +6,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nextstep.Aluno.Aluno;
+import com.nextstep.Aluno.AlunoRepository;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Professor.ProfessorRepository;
 import com.nextstep.RespostaArtigo.RespostaArtigoRepository;
@@ -17,6 +19,7 @@ public class ArtigoService {
 
     private final ArtigoRepository artigoRepository;
     private final ProfessorRepository professorRepository;
+    private final AlunoRepository alunoRepository;
     private final TurmaRepository turmaRepository;
     private final RespostaArtigoRepository respostaArtigoRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -24,12 +27,14 @@ public class ArtigoService {
     public ArtigoService(
             ArtigoRepository artigoRepository,
             ProfessorRepository professorRepository,
+            AlunoRepository alunoRepository,
             TurmaRepository turmaRepository,
             RespostaArtigoRepository respostaArtigoRepository,
             JdbcTemplate jdbcTemplate
     ) {
         this.artigoRepository = artigoRepository;
         this.professorRepository = professorRepository;
+        this.alunoRepository = alunoRepository;
         this.turmaRepository = turmaRepository;
         this.respostaArtigoRepository = respostaArtigoRepository;
         this.jdbcTemplate = jdbcTemplate;
@@ -40,21 +45,41 @@ public class ArtigoService {
             throw new RuntimeException("Título é obrigatório");
         }
 
-        if (dto.getConteudo() == null || dto.getConteudo().isBlank()) {
-            throw new RuntimeException("Conteúdo é obrigatório");
+        boolean semConteudo = dto.getConteudo() == null || dto.getConteudo().isBlank();
+        boolean semUrl = dto.getUrl() == null || dto.getUrl().isBlank();
+
+        if (semConteudo && semUrl) {
+            throw new RuntimeException("Informe o conteúdo ou uma URL para o artigo");
         }
 
-        if (dto.getProfessorId() == null) {
-            throw new RuntimeException("Professor é obrigatório");
+        if (dto.getProfessorId() == null && dto.getAlunoId() == null) {
+            throw new RuntimeException("Autor é obrigatório");
         }
 
-        Professor professor = professorRepository.findById(dto.getProfessorId())
-                .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
+        if (dto.getProfessorId() != null && dto.getAlunoId() != null) {
+            throw new RuntimeException("Informe apenas um autor para o artigo");
+        }
 
         Artigo artigo = new Artigo();
         artigo.setTitulo(dto.getTitulo());
         artigo.setConteudo(dto.getConteudo());
-        artigo.setProfessor(professor);
+        artigo.setUrl(dto.getUrl());
+
+        if (dto.getProfessorId() != null) {
+            Professor professor = professorRepository.findById(dto.getProfessorId())
+                    .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
+
+            artigo.setProfessor(professor);
+            artigo.setTipoAutor("PROFESSOR");
+        }
+
+        if (dto.getAlunoId() != null) {
+            Aluno aluno = alunoRepository.findById(dto.getAlunoId())
+                    .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+
+            artigo.setAluno(aluno);
+            artigo.setTipoAutor("ALUNO");
+        }
 
         if (dto.getTurmaId() != null) {
             Turma turma = turmaRepository.findById(dto.getTurmaId())

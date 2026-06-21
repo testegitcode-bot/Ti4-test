@@ -22,14 +22,7 @@ public class RespostaArtigo {
 
     private LocalDateTime dataAvaliacao;
 
-    private LocalDateTime prazoReenvio;
-
-    private String status;
-
-    private Boolean destaque = false;
-
-    @Column(columnDefinition = "TEXT")
-    private String feedbackProfessor;
+    private Integer nota;
 
     @ManyToOne
     @JoinColumn(name = "id_artigo", nullable = false)
@@ -45,14 +38,6 @@ public class RespostaArtigo {
     public void prePersist() {
         if (dataResposta == null) {
             dataResposta = LocalDateTime.now();
-        }
-
-        if (status == null) {
-            status = "PENDENTE";
-        }
-
-        if (destaque == null) {
-            destaque = false;
         }
     }
 
@@ -84,36 +69,12 @@ public class RespostaArtigo {
         this.dataAvaliacao = dataAvaliacao;
     }
 
-    public LocalDateTime getPrazoReenvio() {
-        return prazoReenvio;
+    public Integer getNota() {
+        return nota;
     }
 
-    public void setPrazoReenvio(LocalDateTime prazoReenvio) {
-        this.prazoReenvio = prazoReenvio;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Boolean getDestaque() {
-        return destaque;
-    }
-
-    public void setDestaque(Boolean destaque) {
-        this.destaque = destaque;
-    }
-
-    public String getFeedbackProfessor() {
-        return feedbackProfessor;
-    }
-
-    public void setFeedbackProfessor(String feedbackProfessor) {
-        this.feedbackProfessor = feedbackProfessor;
+    public void setNota(Integer nota) {
+        this.nota = nota;
     }
 
     public Artigo getArtigo() {

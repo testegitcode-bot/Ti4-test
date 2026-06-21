@@ -10,11 +10,5 @@ public interface RespostaArtigoRepository extends JpaRepository<RespostaArtigo, 
 
     List<RespostaArtigo> findByAlunoId(Long alunoId);
 
-    List<RespostaArtigo> findByStatus(String status);
-
-    List<RespostaArtigo> findByStatusOrderByDataRespostaDesc(String status);
-
-    List<RespostaArtigo> findByArtigoIdAndStatus(Long artigoId, String status);
-
     void deleteByArtigoId(Long artigoId);
 }

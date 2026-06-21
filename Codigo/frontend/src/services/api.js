@@ -23,14 +23,40 @@ async function request(path, options = {}) {
 }
 
 /* ── AUTH ────────────────────────────────────────────────────── */
-export const loginAuth = (body) =>
-  request('/auth/login', {
+
+export async function loginAuth(body) {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const err = new Error(data?.message || data || `Error ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+export const registerAuth = (body) =>
+  request('/auth/register', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
-export const registerAuth = (body) =>
-  request('/auth/register', {
+export const verifyProfessor = (body) =>
+  request('/auth/verify-professor', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const resendVerificationCode = (body) =>
+  request('/auth/resend-code', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -162,33 +188,11 @@ export const listAnswersByArticle = (articleId) =>
 export const listAnswersByStudent = (studentId) =>
   request(`/respostas-artigo/aluno/${studentId}`);
 
-export const listPendingArticleAnswers = () =>
-  request('/respostas-artigo/pendentes');
-
-export const listFeaturedArticleAnswers = () =>
-  request('/respostas-artigo/destaques');
-
-export const approveArticleAnswer = (answerId, destaque = false) =>
-  request(`/respostas-artigo/${answerId}/aprovar`, {
+export const gradeArticleAnswer = (answerId, nota) =>
+  request(`/respostas-artigo/${answerId}/nota`, {
     method: 'PUT',
     body: JSON.stringify({
-      destaque,
-    }),
-  });
-
-export const rejectArticleAnswer = (answerId, feedback) =>
-  request(`/respostas-artigo/${answerId}/reprovar`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      feedback,
-    }),
-  });
-
-export const resendArticleAnswer = (answerId, conteudo) =>
-  request(`/respostas-artigo/${answerId}/reenviar`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      conteudo,
+      nota,
     }),
   });
 

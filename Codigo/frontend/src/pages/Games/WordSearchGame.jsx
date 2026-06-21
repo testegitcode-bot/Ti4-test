@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, Trophy, CheckCircle2, Clock, Search } from 'lucide-react';
 import Footer from '@/components/Footer.jsx';
-import { GameTutorial } from '@/components/games/GameTutorial.jsx';
 import { salvarPontuacao } from "@/services/rankingService";
 
 /* ─── Expanded Word Banks ─────────────────────────────────────────── */
@@ -376,17 +375,36 @@ export default function WordSearchGame() {
                 </div>
               </div>
 
-              <GameTutorial
-                title="Word Search"
-                objective="Find all the hidden English words in the letter grid!"
-                controls="Click and drag your mouse across the letters to select a word. Release to confirm."
-                rules={[
-                  'Words can be hidden horizontally, vertically, or diagonally (depending on difficulty).',
-                  'On Hard mode, words may also be written backwards!',
-                  'Click and drag to highlight letters. Green = found, Blue = currently selecting.',
-                  'Find all words as fast as you can. Your time is tracked!',
-                ]}
-              />
+              {/* INSTRUÇÕES DO JOGO - TELA INICIAL */}
+              <div className="mt-8 bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+                <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+                <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>🎯</span> Objective & Controls
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• Find all the hidden English words in the letter grid!</li>
+                      <li>• <strong>Click and drag</strong> your mouse (or swipe) across the letters to select a word.</li>
+                      <li>• <strong>Release</strong> to confirm your selection.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                    <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                      <span>💡</span> Rules & Tips
+                    </h3>
+                    <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                      <li>• Words can go <strong>horizontally, vertically, or diagonally</strong>.</li>
+                      <li>• On <strong>Hard mode</strong>, words may also be written backwards!</li>
+                      <li>• <span className="text-green-600 font-bold">Colored highlight</span> = word found! <span className="text-blue-500 font-bold">Blue highlight</span> = currently selecting.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
           <Footer />
@@ -527,18 +545,38 @@ export default function WordSearchGame() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto w-full px-4 mt-6">
-          <GameTutorial
-            title="Word Search"
-            objective="Find all hidden words listed on the right!"
-            controls="Click and drag across letters to select a word. Release to confirm."
-            rules={[
-              'Words go in straight lines: horizontal, vertical, or diagonal.',
-              'On Hard mode, words may be written backwards too.',
-              'Green = word found! Blue = currently selecting.',
-            ]}
-          />
+        {/* INSTRUÇÕES DO JOGO - TELA PLAYING */}
+        <div className="max-w-7xl mx-auto w-full px-4 mt-8 mb-6">
+          <div className="bg-white rounded-3xl border-4 border-secondary shadow-xl p-8">
+            <h2 className="text-2xl font-black text-secondary mb-2">🎮 How to Play</h2>
+            <p className="text-muted-foreground mb-6 font-medium">Follow the instructions on the screen to play.</p>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>🎯</span> Objective & Controls
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• Find all the hidden English words in the letter grid!</li>
+                  <li>• <strong>Click and drag</strong> your mouse (or swipe) across the letters to select a word.</li>
+                  <li>• <strong>Release</strong> to confirm your selection.</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200">
+                <h3 className="text-lg font-bold text-secondary mb-3 flex items-center gap-2">
+                  <span>💡</span> Rules & Tips
+                </h3>
+                <ul className="text-gray-700 space-y-2 text-sm font-medium">
+                  <li>• Words can go <strong>horizontally, vertically, or diagonally</strong>.</li>
+                  <li>• On <strong>Hard mode</strong>, words may also be written backwards!</li>
+                  <li>• <span className="text-green-600 font-bold">Colored highlight</span> = word found! <span className="text-blue-500 font-bold">Blue highlight</span> = currently selecting.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
+
         <Footer />
       </div>
     </>
