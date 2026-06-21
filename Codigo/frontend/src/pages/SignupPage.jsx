@@ -57,9 +57,11 @@ export default function SignupPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-[440px] overflow-hidden rounded-[32px] border-[6px] border-[#FF4F8B] bg-white shadow-2xl"
+          className={`w-full max-w-[440px] overflow-hidden rounded-[32px] border-[6px] bg-white shadow-2xl transition-colors duration-300 ${
+            isTeacher ? 'border-[#5B3DF5]' : 'border-[#FF4F8B]'
+          }`}
         >
-          <div className="bg-[#FF4F8B] px-8 py-10 text-center text-white">
+          <div className={`px-8 py-10 text-center text-white transition-colors duration-300 ${isTeacher ? 'bg-[#5B3DF5]' : 'bg-[#FF4F8B]'}`}>
             <h1 className="text-4xl font-black">Join the Team!</h1>
             <p className="mt-2 font-semibold text-white/80">
               {isTeacher

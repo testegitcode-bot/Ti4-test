@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Footer from '@/components/Footer.jsx';
-import { Users, BookOpen, BarChart as BarChart3, LogOut, CreditCard as Edit2, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Users, BookOpen, ChartBar as BarChart3, LogOut, CreditCard as Edit2, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
 
 export default function ProfessorDashboard() {
   const { user, logout } = useAuth();
@@ -74,10 +75,10 @@ export default function ProfessorDashboard() {
 
       setModalEdicaoAberto(false);
       setMostrarSenha(false);
-      alert('Dados atualizados com sucesso!');
+      toast.success('Dados atualizados com sucesso!');
     } catch (erro) {
       console.error(erro);
-      alert('Erro ao atualizar dados.');
+      toast.error('Erro ao atualizar dados.');
     } finally {
       setSalvando(false);
     }
@@ -92,12 +93,12 @@ export default function ProfessorDashboard() {
 
       if (!resposta.ok) throw new Error('Erro ao excluir conta');
 
-      alert('Conta excluída com sucesso!');
+      toast.success('Conta excluída com sucesso!');
       logout();
       navigate('/');
     } catch (erro) {
       console.error(erro);
-      alert('Erro ao excluir conta.');
+      toast.error('Erro ao excluir conta.');
     } finally {
       setExcluindo(false);
       setModalExclusaoAberto(false);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BookOpenText,
   CalendarDays,
   GraduationCap,
@@ -40,6 +41,7 @@ export default function ArticlesPage() {
   const [filterMode, setFilterMode] = useState("ESCOLA");
 
   const [showForm, setShowForm] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState(null);
 
   useEffect(() => {
     carregarDadosIniciais();
@@ -123,18 +125,19 @@ export default function ArticlesPage() {
   }
 
   async function handleDelete(article) {
-    const confirmed = window.confirm(
-      `Tem certeza que deseja excluir o artigo "${article.titulo}"?`
-    );
+    setArticleToDelete(article);
+  }
 
-    if (!confirmed) return;
-
+  async function confirmarExclusaoArtigo() {
+    if (!articleToDelete) return;
     try {
-      await deleteArticle(article.id);
-      setArticles((prev) => prev.filter((a) => a.id !== article.id));
+      await deleteArticle(articleToDelete.id);
+      setArticles((prev) => prev.filter((a) => a.id !== articleToDelete.id));
       toast.success("Artigo excluído.");
     } catch (err) {
       toast.error(`Erro ao excluir: ${err.message}`);
+    } finally {
+      setArticleToDelete(null);
     }
   }
 
@@ -297,6 +300,14 @@ export default function ArticlesPage() {
           onSaved={handleArticleSaved}
         />
       )}
+
+      {articleToDelete && (
+        <ConfirmDeleteModal
+          titulo={articleToDelete.titulo}
+          onCancel={() => setArticleToDelete(null)}
+          onConfirm={confirmarExclusaoArtigo}
+        />
+      )}
     </div>
   );
 }
@@ -372,6 +383,41 @@ function EmptyState({ text }) {
       <p className="font-semibold text-[hsl(var(--muted-foreground))]">
         {text}
       </p>
+    </div>
+  );
+}
+
+function ConfirmDeleteModal({ titulo, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+            <AlertTriangle size={24} className="text-red-600" />
+          </div>
+          <h3 className="text-xl font-black text-[hsl(var(--secondary))]">Excluir Artigo</h3>
+        </div>
+
+        <p className="mb-6 text-sm text-[hsl(var(--muted-foreground))]">
+          Tem certeza que deseja excluir o artigo{" "}
+          <strong className="text-[hsl(var(--secondary))]">"{titulo}"</strong>? Esta ação não pode ser desfeita.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-2 rounded-xl border-2 border-[hsl(var(--border))] px-4 py-2 font-bold text-[hsl(var(--muted-foreground))] hover:bg-gray-50"
+          >
+            <X size={16} /> Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 font-bold text-white transition-colors hover:bg-red-700"
+          >
+            <Trash2 size={16} /> Excluir
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
