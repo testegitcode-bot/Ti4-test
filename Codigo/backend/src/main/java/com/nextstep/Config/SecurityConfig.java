@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,16 +22,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/alunos/**").permitAll()
-                        .requestMatchers("/quizzes/**").permitAll()
-                        .requestMatchers("/ranking/**").permitAll()
-                        .requestMatchers("/resultados-quiz/**").permitAll()
-                        .requestMatchers("/resultado-questao/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/professores/**").permitAll()
-                        .requestMatchers("/turmas/**").permitAll()
-                        .requestMatchers("/artigos/**").permitAll()
-                        .requestMatchers("/respostas-artigo/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().permitAll()
                 )
                 .build();
@@ -40,25 +32,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "https://pmg-es-2026-1-ti4-3170100-nextstep.vercel.app",
-                "https://activityschool.vercel.app",
-                "https://nextstepschool.vercel.app",
-                "https://achieveitidiomas.vercel.app"
-        ));
+        config.setAllowedOriginPatterns(List.of("*"));
 
         config.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
         ));
 
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("*"));
         config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
