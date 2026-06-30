@@ -21,6 +21,7 @@ public class EmailService {
     }
 
     public void enviarCodigoValidacaoProfessor(String nomeProfessor, String emailProfessor, String codigo) {
+        System.out.println(">>> BREVO_API_KEY: [" + brevoApiKey + "]");
     String url = "https://api.brevo.com/v3/smtp/email";
     
     HttpHeaders headers = new HttpHeaders();
