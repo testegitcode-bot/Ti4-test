@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import CriarQuizModal from "@/pages/Professor/CriarQuizModal.jsx";
 import "./GerenciarTurma.css";
+import { API_BASE } from "@/services/api";
 
 function GerenciarTurma() {
   const { id } = useParams();
@@ -31,10 +32,10 @@ function GerenciarTurma() {
   const [novoNome, setNovoNome] = useState("");
   const [novaSerie, setNovaSerie] = useState("");
 
-  const API_TURMAS = "http://localhost:8080/turmas";
-  const API_ALUNOS = "http://localhost:8080/alunos";
-  const API_QUIZZES = "http://localhost:8080/quizzes";
-  const API_RESULTADOS = "http://localhost:8080/resultados-quiz";
+  const API_TURMAS = `${API_BASE}/turmas`;
+  const API_ALUNOS = `${API_BASE}/alunos`;
+  const API_QUIZZES = `${API_BASE}/quizzes`;
+  const API_RESULTADOS = `${API_BASE}/resultados-quiz`;
 
   useEffect(() => {
     carregarTurma();
@@ -95,7 +96,7 @@ function GerenciarTurma() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/resultado-questao/resultado/${resultado.id}`
+        `${API_BASE}/resultado-questao/resultado/${resultado.id}`
       );
 
       const data = await res.json();

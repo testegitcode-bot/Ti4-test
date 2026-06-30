@@ -68,7 +68,7 @@ export default function Header() {
             </motion.div>
 
             <span className="text-2xl font-black tracking-tight text-secondary transition-colors group-hover:text-primary">
-              NextStep <span className="text-primary">English</span>
+              Achieve It  <span className="text-primary">Idiomas</span>
             </span>
           </Link>
 

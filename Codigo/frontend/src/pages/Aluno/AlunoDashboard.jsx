@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Footer from '@/components/Footer.jsx';
 import { BookOpen, LogOut, Edit, Save, X, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { API_BASE } from "@/services/api";
 
 export default function AlunoDashboard() {
   const { user, logout } = useAuth();
@@ -36,7 +37,7 @@ export default function AlunoDashboard() {
 
   async function carregarAluno() {
     try {
-      const resposta = await fetch(`http://localhost:8080/alunos/${alunoId}`);
+      const resposta = await fetch(`${API_BASE}/alunos/${alunoId}`);
       const dados = await resposta.json();
 
       setAluno({
@@ -59,7 +60,7 @@ export default function AlunoDashboard() {
     try {
       setCarregandoTurmas(true);
 
-      const resposta = await fetch(`http://localhost:8080/alunos/${alunoId}/turmas`);
+      const resposta = await fetch(`${API_BASE}/alunos/${alunoId}/turmas`);
       const dados = await resposta.json();
 
       setTurmas(dados);
@@ -83,7 +84,7 @@ export default function AlunoDashboard() {
 
   async function salvarEdicao() {
     try {
-      const resposta = await fetch(`http://localhost:8080/alunos/${alunoId}`, {
+      const resposta = await fetch(`${API_BASE}/alunos/${alunoId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -125,7 +126,7 @@ export default function AlunoDashboard() {
   if (!confirmar) return;
 
   try {
-    const resposta = await fetch(`http://localhost:8080/alunos/${alunoId}`, {
+    const resposta = await fetch(`${API_BASE}/alunos/${alunoId}`, {
       method: 'DELETE'
     });
 

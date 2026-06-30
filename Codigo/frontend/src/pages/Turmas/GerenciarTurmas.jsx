@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import "./GerenciarTurmas.css";
+import { API_BASE } from "@/services/api";
 
 function GerenciarTurmas() {
   const [turmas, setTurmas] = useState([]);
@@ -10,7 +11,7 @@ function GerenciarTurmas() {
   const [carregando, setCarregando] = useState(false);
 
   const navigate = useNavigate();
-  const API = "http://localhost:8080/turmas";
+  const API = `${API_BASE}/turmas`;
 
   useEffect(() => {
     carregarTurmas();

@@ -1,19 +1,24 @@
 package com.nextstep.Auth;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity; // Importante para o Logger
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.nextstep.Aluno.Aluno;
 import com.nextstep.Aluno.AlunoRepository;
 import com.nextstep.Email.EmailService;
 import com.nextstep.Professor.Professor;
 import com.nextstep.Professor.ProfessorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory; // Importante para o Logger
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -110,17 +115,16 @@ public class AuthController {
             try {
                 emailService.enviarCodigoValidacaoProfessor(saved.getNome(), saved.getEmail(), codigo);
             } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                        Map.of("message", "Professor cadastrado, mas falha ao enviar e-mail de validação: " + e.getMessage())
-                );
-            }
+                System.err.println("ERRO AO ENVIAR E-MAIL DE VALIDAÇÃO:");
+                e.printStackTrace();
+}
 
             return ResponseEntity.ok(Map.of(
-                    "message", "Cadastro realizado com sucesso! Um código de validação foi enviado para o seu e-mail.",
-                    "requiresVerification", true,
-                    "email", saved.getEmail()
+                "message", "Cadastro realizado com sucesso! Um código de validação foi gerado.",
+                "requiresVerification", true,
+                "email", saved.getEmail()
             ));
-        }
+            }
 
         return ResponseEntity.badRequest().body(
                 Map.of("message", "Invalid role")

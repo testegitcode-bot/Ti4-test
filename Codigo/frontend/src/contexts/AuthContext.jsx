@@ -76,26 +76,39 @@ export function AuthProvider({ children }) {
   }
 
   async function registerUser(nome, email, senha, role) {
-    setLoading(true);
+  console.log("AUTH REGISTER USER INICIOU", { nome, email, role });
 
-    try {
-      const createdUser = await registerAuth({ nome, email, senha, role });
+  setLoading(true);
 
-      if (createdUser?.requiresVerification) {
-        setPendingProfessorEmail(email);
-        const err = new Error("REQUIRES_VERIFICATION");
-        err.requiresVerification = true;
-        throw err;
-      }
+  try {
+    console.log("ANTES DO registerAuth");
 
-      const userFormatado = formatUser(createdUser);
-      setUser(userFormatado);
-      return userFormatado;
-    } finally {
-      setLoading(false);
+    const createdUser = await registerAuth({ nome, email, senha, role });
+
+    console.log("DEPOIS DO registerAuth", createdUser);
+
+    if (role === "teacher") {
+      console.log("AUTH VAI RETORNAR PROFESSOR COM VERIFICACAO");
+
+      setPendingProfessorEmail(email);
+
+      return {
+        ...createdUser,
+        requiresVerification: true,
+        role: "teacher",
+        email,
+      };
     }
-  }
 
+    const userFormatado = formatUser(createdUser);
+    setUser(userFormatado);
+    return userFormatado;
+  } finally {
+    console.log("REGISTER USER FINALIZOU");
+    setLoading(false);
+  }
+}
+  
   async function verifyCode(code) {
     setLoading(true);
     try {

@@ -83,7 +83,7 @@ function ChatWidget() {
     script.id = scriptId;
     script.src = "/chat-widget.js";
     script.async = true;
-    script.setAttribute("data-api-url", "http://localhost:3001/api/chat");
+  script.setAttribute("data-api-url", import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:3001/api/chat");    
     script.setAttribute("data-title", "Tutor NextStep");
     script.setAttribute("data-welcome", "Hello! How can I help you with English today?");
     script.setAttribute("data-autoinit", "true");

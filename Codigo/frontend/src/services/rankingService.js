@@ -1,3 +1,5 @@
+import { API_BASE } from "@/services/api";
+
 export async function salvarPontuacao(nomeJogo, pontuacao) {
   let alunoId = localStorage.getItem("alunoId") || localStorage.getItem("userId");
 
@@ -18,7 +20,7 @@ export async function salvarPontuacao(nomeJogo, pontuacao) {
     return;
   }
 
-  const resposta = await fetch("http://localhost:8080/ranking/salvar", {
+  const resposta = await fetch(`${API_BASE}/ranking/salvar`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

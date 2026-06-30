@@ -111,10 +111,7 @@ export default function ProfessorVerificationPage() {
             </div>
             <h1 className="text-3xl font-black">Verify Your Account</h1>
             <p className="mt-2 font-semibold text-white/80">
-              We sent a 6-digit code to
-            </p>
-            <p className="mt-1 rounded-xl bg-white/20 px-4 py-2 font-black text-white">
-              {pendingProfessorEmail}
+              We sent a 6-digit code to school's principal
             </p>
           </div>
 

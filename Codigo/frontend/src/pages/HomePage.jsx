@@ -194,7 +194,7 @@ export default function HomePage() {
                 className="mb-6 text-4xl font-black leading-tight text-secondary md:text-5xl"
                 style={{ letterSpacing: '-0.03em' }}
               >
-                Why <span className="text-primary">NextStep</span> English?
+                Why <span className="text-primary">Achieve It</span> Idiomas?
               </h2>
 
               <p className="mb-4 text-lg font-medium leading-relaxed text-foreground/75">

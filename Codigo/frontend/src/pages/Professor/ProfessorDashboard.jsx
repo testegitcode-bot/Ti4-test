@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Footer from '@/components/Footer.jsx';
 import toast from 'react-hot-toast';
-import { Users, BookOpen, ChartBar as BarChart3, LogOut, CreditCard as Edit2, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
+import { Users, BookOpen, BarChart as BarChart3, LogOut, CreditCard as Edit2, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
+import { API_BASE } from "@/services/api";
 
 export default function ProfessorDashboard() {
   const { user, logout } = useAuth();
@@ -32,7 +33,7 @@ export default function ProfessorDashboard() {
 
   async function carregarProfessor() {
     try {
-      const resposta = await fetch(`http://localhost:8080/professores/${professorId}`);
+      const resposta = await fetch(`${API_BASE}/professores/${professorId}`);
       const dados = await resposta.json();
       setProfessor({
         nome: dados.nome || '',
@@ -58,7 +59,7 @@ export default function ProfessorDashboard() {
   async function salvarEdicao() {
     setSalvando(true);
     try {
-      const resposta = await fetch(`http://localhost:8080/professores/${professorId}`, {
+      const resposta = await fetch(`${API_BASE}/professores/${professorId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -87,7 +88,7 @@ export default function ProfessorDashboard() {
   async function confirmarExclusao() {
     setExcluindo(true);
     try {
-      const resposta = await fetch(`http://localhost:8080/professores/${professorId}`, {
+      const resposta = await fetch(`${API_BASE}/professores/${professorId}`, {
         method: 'DELETE'
       });
 

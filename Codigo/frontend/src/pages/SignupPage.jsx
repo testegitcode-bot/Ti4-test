@@ -5,7 +5,7 @@ import Footer from '@/components/Footer.jsx';
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { registerUser, loading } = useAuth();
+  const { registerUser, loading, setPendingProfessorEmail  } = useAuth();
 
   const [role, setRole] = useState('student');
   const [nome, setNome] = useState('');
@@ -15,39 +15,47 @@ export default function SignupPage() {
   const [error, setError] = useState('');
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    if (senha.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (senha !== confirmarSenha) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    try {
-      const createdUser = await registerUser(nome, email, senha, role);
-      if (createdUser?.role === 'teacher') {
-        navigate('/professor/dashboard');
-      } else {
-        navigate('/');
-      }
-    } catch (err) {
-      if (err?.requiresVerification) {
-        navigate('/verify-professor');
-        return;
-      }
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('e-mail')) {
-        setError('Could not create account.');
-      } else {
-        setError('Unable to create account. Please try again.');
-      }
-    }
+  if (senha.length < 6) {
+    setError('Password must be at least 6 characters long.');
+    return;
   }
+
+  if (senha !== confirmarSenha) {
+    setError('Passwords do not match.');
+    return;
+  }
+
+ try {
+  console.log("ANTES DO REGISTER", { nome, email, role });
+
+  const createdUser = await registerUser(nome, email, senha, role);
+
+  console.log("DEPOIS DO REGISTER", createdUser);
+
+  if (role === 'teacher' || createdUser?.requiresVerification) {
+    console.log("VAI REDIRECIONAR PARA VERIFICAÇÃO");
+    setPendingProfessorEmail(email);
+    navigate('/verify-professor');
+    return;
+  }
+
+  console.log("VAI PARA HOME");
+  navigate('/');
+} catch (err) {
+  console.log("CAIU NO CATCH", err);
+
+  const msg = err?.message || '';
+
+  if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('e-mail')) {
+    setError('Could not create account.');
+  } else {
+    setError('Unable to create account. Please try again.');
+  }
+}
+}
 
   const isTeacher = role === 'teacher';
 

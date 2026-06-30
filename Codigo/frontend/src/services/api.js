@@ -5,19 +5,47 @@
  * Vite's proxy redirects /api → http://localhost:8080 automatically.
  */
 
-const BASE = '/api';
+export const API_BASE = import.meta.env.VITE_API_URL || "";
+
+const BASE = API_BASE;
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, {
+  const url = `${BASE}${path}`;
+
+  console.log("API REQUEST INICIOU:", {
+    base: BASE,
+    path,
+    url,
+    options,
+  });
+
+  const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
 
+  console.log("API RESPONSE CHEGOU:", {
+    status: res.status,
+    ok: res.ok,
+    url,
+  });
+
   if (res.status === 204) return null;
 
-  const data = await res.json().catch(() => null);
+  const data = await res.json().catch((err) => {
+    console.log("ERRO AO LER JSON:", err);
+    return null;
+  });
 
-  if (!res.ok) throw new Error(data || `Error ${res.status}`);
+  console.log("API DATA:", data);
+
+  if (!res.ok) {
+    const err = new Error(data?.message || data || `Error ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    console.log("API VAI LANÇAR ERRO:", err);
+    throw err;
+  }
 
   return data;
 }

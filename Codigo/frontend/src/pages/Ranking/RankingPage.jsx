@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./RankingPage.css";
 import { Trophy, Medal, Crown, RefreshCw } from "lucide-react";
+import { API_BASE } from "@/services/api";
 
 const jogos = [
   "Global Ranking",
@@ -28,8 +29,8 @@ export default function RankingPage() {
 
       const url =
         jogoSelecionado === "Global Ranking"
-          ? "/api/ranking/global"
-          : `/api/ranking/${encodeURIComponent(jogoSelecionado)}`;
+         ? `${API_BASE}/ranking/global`
+          : `${API_BASE}/ranking/${encodeURIComponent(jogoSelecionado)}`;
 
       const resposta = await fetch(url);
 

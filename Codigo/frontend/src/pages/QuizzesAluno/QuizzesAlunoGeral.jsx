@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext.jsx";
 import "./QuizzesAlunoGeral.css";
+import { API_BASE } from "@/services/api";
 
 export default function QuizzesAlunoGeral() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ async function carregarDados() {
     setCarregando(true);
     setErro("");
 
-    const respostaTurmas = await fetch(`/api/alunos/${user.id}/turmas`);
+    const respostaTurmas = await fetch(`${API_BASE}/alunos/${user.id}/turmas`);
 
     if (!respostaTurmas.ok) {
       throw new Error("Erro ao carregar turmas do aluno.");
@@ -44,7 +45,7 @@ async function carregarDados() {
       turmasData.map(async (turma) => {
         const idTurma = turma.idTurma || turma.id;
 
-        const respostaQuizzes = await fetch(`/api/quizzes/turma/${idTurma}`);
+        const respostaQuizzes = await fetch(`${API_BASE}/quizzes/turma/${idTurma}`);
 
         if (!respostaQuizzes.ok) {
           return [];
@@ -115,7 +116,7 @@ async function carregarDados() {
       }
     });
 
-    await fetch("/api/resultados-quiz", {
+    await fetch(`${API_BASE}/resultados-quiz`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

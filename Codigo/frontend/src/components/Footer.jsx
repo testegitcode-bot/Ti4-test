@@ -14,7 +14,7 @@ export default function Footer() {
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
               <span className="text-xl font-black text-white">
-                NextStep <span className="text-accent">English</span>
+                Achieve It  <span className="text-accent">Idiomas</span>
               </span>
             </Link>
             <p className="text-sm font-medium leading-relaxed text-white/70">

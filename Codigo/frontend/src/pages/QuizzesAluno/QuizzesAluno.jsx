@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./QuizzesAluno.css";
 import { useAuth } from "@/contexts/AuthContext.jsx";
+import { API_BASE } from "@/services/api";
 
 export default function QuizzesAluno() {
   const { idTurma } = useParams();
@@ -42,7 +43,7 @@ export default function QuizzesAluno() {
   }
 
   async function carregarQuizzes() {
-    const resposta = await fetch(`/api/quizzes/turma/${idTurma}`);
+    const resposta = await fetch(`${API_BASE}/quizzes/turma/${idTurma}`);
 
     if (!resposta.ok) {
       throw new Error("Erro ao carregar quizzes.");
@@ -53,7 +54,7 @@ export default function QuizzesAluno() {
   }
 
   async function carregarQuizzesRespondidos() {
-    const resposta = await fetch(`/api/resultados-quiz/aluno/${user.id}`);
+    const resposta = await fetch(`${API_BASE}/resultados-quiz/aluno/${user.id}`);
 
     if (!resposta.ok) {
       throw new Error("Erro ao carregar quizzes respondidos.");
@@ -117,7 +118,7 @@ export default function QuizzesAluno() {
         }
       });
 
-      const resposta = await fetch("/api/resultados-quiz", {
+      const resposta = await fetch(`${API_BASE}/resultados-quiz`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

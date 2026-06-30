@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "@/services/api";
 
 export default function RankingTurma({ idTurma }) {
   const [ranking, setRanking] = useState([]);
@@ -11,7 +12,7 @@ export default function RankingTurma({ idTurma }) {
         setCarregando(true);
 
         const response = await fetch(
-          `http://localhost:8080/resultados-quiz/ranking/turma/${idTurma}`
+          `${API_BASE}/resultados-quiz/ranking/turma/${idTurma}`
         );
 
         if (!response.ok) {
