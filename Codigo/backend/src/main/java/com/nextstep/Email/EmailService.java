@@ -1,51 +1,36 @@
 package com.nextstep.Email;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestTemplate restTemplate;
+
+    @Value("${BREVO_API_KEY}")
+    private String brevoApiKey;
 
     @Value("${nextstep.email.diretora}")
     private String emailDiretora;
 
-    @Value("${spring.mail.username}")
-    private String emailRemetente;
-
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    public EmailService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public void enviarCodigoValidacaoProfessor(
-            String nomeProfessor,
-            String emailProfessor,
-            String codigo
-    ) throws MessagingException {
+    public void enviarCodigoValidacaoProfessor(String nomeProfessor, String emailProfessor, String codigo) {
+    String url = "https://api.brevo.com/v3/smtp/email";
+    
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("api-key", brevoApiKey);
 
-        System.out.println("=== ENVIANDO EMAIL DE VALIDACAO ===");
-        System.out.println("Email remetente: " + emailRemetente);
-        System.out.println("Email diretora: " + emailDiretora);
-        System.out.println("Professor: " + nomeProfessor);
-        System.out.println("Email professor: " + emailProfessor);
-        System.out.println("Codigo: " + codigo);
+    // Usamos Text Blocks (três aspas) para o HTML ficar limpo e legível
+    String htmlContent = """
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(emailRemetente);
-            helper.setTo(emailDiretora);
-            helper.setSubject("NextStep — Novo cadastro de professor aguarda validação");
-
-            String html = """
-                    <!DOCTYPE html>
+        <!DOCTYPE html>
                     <html lang="pt-BR">
                     <head><meta charset="UTF-8"></head>
                     <body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
@@ -101,7 +86,7 @@ public class EmailService {
                                   </table>
 
                                   <p style="margin:0;color:#80868b;font-size:13px;line-height:1.6;">
-                                    Este código expira em <strong>15 minutos</strong>. Após esse prazo, o professor deverá solicitar um novo código.
+                                    Este código expira em <strong>24 horas</strong>. Após esse prazo, o professor deverá solicitar um novo código.
                                   </p>
                                 </td>
                               </tr>
@@ -120,18 +105,30 @@ public class EmailService {
                       </table>
                     </body>
                     </html>
-                    """.formatted(nomeProfessor, emailProfessor, codigo);
 
-            helper.setText(html, true);
+        
+        """.formatted(nomeProfessor, emailProfessor, codigo);
 
-            System.out.println("=== CHAMANDO mailSender.send ===");
-            mailSender.send(message);
-            System.out.println("=== EMAIL ENVIADO COM SUCESSO ===");
+    // Aqui está o truque para enviar via API:
+    // Precisamos limpar o HTML (remover quebras de linha e escapar aspas)
+    String cleanHtml = htmlContent.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
 
-        } catch (Exception e) {
-            System.err.println("=== ERRO AO ENVIAR EMAIL DE VALIDACAO ===");
-            e.printStackTrace();
-            throw e;
+    String body = String.format("""
+        {
+            "sender": {"name": "NextStep", "email": "nextstep.sistema@gmail.com"},
+            "to": [{"email": "%s"}],
+            "subject": "NextStep — Novo cadastro de professor",
+            "htmlContent": "%s"
         }
+        """, emailDiretora, cleanHtml);
+
+    HttpEntity<String> entity = new HttpEntity<>(body, headers);
+    
+    try {
+        restTemplate.postForEntity(url, entity, String.class);
+        System.out.println("=== EMAIL ENVIADO COM SUCESSO ===");
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw e;
     }
 }
