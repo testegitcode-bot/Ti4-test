@@ -7,7 +7,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity; // Importante para o Logger
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,17 +26,19 @@ import com.nextstep.Professor.ProfessorRepository;
 @CrossOrigin("*")
 public class AuthController {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthController.class); // Criando o Logger
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private final AlunoRepository alunoRepository;
     private final ProfessorRepository professorRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public AuthController(AlunoRepository alunoRepository, ProfessorRepository professorRepository,
-                          EmailService emailService) {
+                          EmailService emailService, PasswordEncoder passwordEncoder) {
         this.alunoRepository = alunoRepository;
         this.professorRepository = professorRepository;
         this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
@@ -52,10 +55,9 @@ public class AuthController {
         if (professor.isPresent()) {
             Professor p = professor.get();
 
-            // Usando o log.info em vez de System.out.println
             log.info("Tentativa de login de Professor: {}", email);
 
-            if (!p.getSenha().equals(senha)) {
+            if (!passwordEncoder.matches(senha, p.getSenha())) {
                 log.warn("Falha no login: Senha incorreta para {}", email);
                 return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
             }
@@ -105,7 +107,7 @@ public class AuthController {
             Professor professor = new Professor();
             professor.setNome(request.nome());
             professor.setEmail(request.email());
-            professor.setSenha(request.senha());
+            professor.setSenha(passwordEncoder.encode(request.senha()));
             professor.setAtivo(Boolean.FALSE);
             professor.setCodigoValidacao(codigo);
             professor.setDataExpiracaoCodigo(LocalDateTime.now().plusHours(24));
