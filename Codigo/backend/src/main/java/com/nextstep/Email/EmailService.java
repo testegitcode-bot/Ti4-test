@@ -1,15 +1,14 @@
 package com.nextstep.Email;
 
-import com.resend.Resend;
-import com.resend.core.exception.ResendException;
-import com.resend.services.emails.model.SendEmailRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
 @Service
 public class EmailService {
+
+    private final RestTemplate restTemplate;
 
     @Value("${RESEND_API_KEY}")
     private String resendApiKey;
@@ -17,7 +16,17 @@ public class EmailService {
     @Value("${nextstep.email.diretora}")
     private String emailDiretora;
 
+    public EmailService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public void enviarCodigoValidacaoProfessor(String nomeProfessor, String emailProfessor, String codigo) {
+        String url = "https://api.resend.com/emails";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + resendApiKey);
+
         String htmlContent = """
             <!DOCTYPE html>
                         <html lang="pt-BR">
@@ -96,21 +105,25 @@ public class EmailService {
                         </html>
             """.formatted(nomeProfessor, emailProfessor, codigo);
 
-        Resend resend = new Resend(resendApiKey);
+        String cleanHtml = htmlContent.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
 
-        SendEmailRequest sendEmailRequest = SendEmailRequest.builder()
-                .from("Sistema NextStep <onboarding@resend.dev>")
-                .to(List.of(emailDiretora))
-                .subject("NextStep — Novo cadastro de professor")
-                .html(htmlContent)
-                .build();
+        String body = String.format("""
+            {
+                "from": "Sistema NextStep <onboarding@resend.dev>",
+                "to": ["%s"],
+                "subject": "NextStep — Novo cadastro de professor",
+                "html": "%s"
+            }
+            """, emailDiretora, cleanHtml);
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
         try {
-            resend.emails().send(sendEmailRequest);
+            restTemplate.postForEntity(url, entity, String.class);
             System.out.println("=== EMAIL ENVIADO COM SUCESSO ===");
-        } catch (ResendException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Falha ao enviar email via Resend", e);
+            throw e;
         }
     }
 }
